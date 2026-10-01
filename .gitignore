@@ -1,0 +1,14 @@
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Pipeline outputs (regenerated on every run)
+outputs/
+
+# Hugging Face model cache (if redirected into the repo)
+.cache/
