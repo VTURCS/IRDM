@@ -8,41 +8,86 @@ undergraduate profiles to Virginia Tech research opportunity listings?**
 
 | File | Purpose |
 | --- | --- |
-| `research_matching_pipeline.py` | The whole pipeline: mock data, 3 retrievers, metrics, report, CSV export |
+| `research_matching_pipeline.py` | **Pure logic** — retrievers, hybrid fusion, metrics, report, CSV export. Contains no data. |
+| `data/` | All datasets + the canonical schema (see below) |
+| `scripts/benchmark.py` | Phase-by-phase timing harness (before/after comparison) |
 | `requirements.txt` | Dependencies |
-| `outputs/` | Generated CSVs (created on first run, git-ignored) |
+| `outputs/<dataset>/` | Generated CSVs (created on first run, git-ignored) |
+
+## Architecture
+
+The pipeline is three explicit stages, so the expensive corpus-side work happens exactly once:
+
+```
+load_dataset(name)                    data package, canonical schema
+        │
+   build_index(cfg, dataset, encoder)   ──► SearchIndex  (immutable)
+        │                                  text assembly, BM25 fit,
+        │                                  doc embeddings: ONCE per corpus
+        │
+   rank_candidates(index, cfg)          ──► ResultTable  (numpy arrays)
+        │                                  (3 x Q x C) score stack -> argsort
+        │
+   evaluate_metrics(table, dataset, k)  ──► per_profile, summary  (vectorised)
+        │
+   ResultTable.to_frame(listings)       ──► tidy CSV (built once, on export)
+```
+
+Key types: `SearchIndex` (cached retrieval state), `ResultTable` (ranked numpy arrays),
+`Dataset` (data + precomputed grade matrix). All are frozen dataclasses.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\benchmark.py --scale 2000    # phase timings
+```
+
+## Data layout
+
+The pipeline holds **no** corpus, queries or labels — it resolves them by name from `data/`:
+
+| File | Role |
+| --- | --- |
+| `data/opportunities.py` | 5 listings for the v2 benchmark (data as code) |
+| `data/student_profiles.csv` | 20 student profiles (data as CSV) |
+| `data/schema.py` | `Opportunity` / `Query` / `Dataset` dataclasses + validation |
+| `data/prototype_dataset.py` | `prototype` — 8 listings, 4 short vague queries, hand-graded |
+| `data/synthetic_v2_dataset.py` | `synthetic_v2` — 5 listings, 20 profiles, derived labels |
+| `data/datasets.py` | Registry: dataset name → loader |
+
+Adding a dataset = writing one `load() -> Dataset`. The retrievers, metrics and report
+never change, and every loader normalises its own field names (`id` vs `opp_id`,
+`required_skills` vs `key_terms`) so the pipeline only ever sees the canonical schema.
+
+`Dataset.__post_init__` rejects two things that would silently corrupt results: duplicate
+ids, and a `relevance_map` that does **not** cover every (query, listing) pair — the latter
+because Recall@k divides by the relevant-set size and a partial map inflates it.
 
 ## Quick start
-
-The project uses a local virtual environment (`.venv`) so PyTorch and
-`sentence-transformers` stay isolated from the system interpreter.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe research_matching_pipeline.py
+.\.venv\Scripts\python.exe research_matching_pipeline.py                          # prototype (default)
+.\.venv\Scripts\python.exe research_matching_pipeline.py --dataset synthetic_v2    # the 5x4 benchmark
 ```
 
-Verified working on **Python 3.13** with `torch 2.14.1+cpu` and
-`sentence-transformers 6.1.0`. The first run downloads the ~90 MB `all-MiniLM-L6-v2`
-model into the Hugging Face cache; later runs are offline and instant.
+Verified on **Python 3.13** with `torch 2.14.1+cpu` and `sentence-transformers 6.1.0`.
+The first run downloads the ~90 MB `all-MiniLM-L6-v2` model; later runs are offline.
 
-If `sentence-transformers` / PyTorch can't be installed or downloaded (restricted network,
-air-gapped cluster), the pipeline still runs end to end:
+Other flags:
 
 ```powershell
-.\.venv\Scripts\python.exe research_matching_pipeline.py --offline-embeddings
+--match-type semantic_analogy distractor   # label-stratified ablation (synthetic_v2)
+--top-k 8                                  # override the dataset's suggested k
+--bm25-weight 0.7                          # hybrid weight sweep
+--offline-embeddings                       # no model download; hashed-BoW proxy
+--output-dir outputs/run2
 ```
 
-Useful flags:
-
-```powershell
-.\.venv\Scripts\python.exe research_matching_pipeline.py --top-k 8 --bm25-weight 0.7 --output-dir outputs/run2
-```
+Each run writes to `outputs/<dataset>[/__<strata>]/` so runs never overwrite each other.
 
 > **Fallback caveat:** with `--offline-embeddings` the "semantic" method is a hashed
-> bag-of-words **lexical proxy, not MiniLM**. The method label and the exported CSVs record
-> which backend ran, so a report can never accidentally claim MiniLM results it doesn't have.
+> bag-of-words **lexical proxy, not MiniLM**. The method label and exported CSVs record which
+> backend ran, so a report can never claim MiniLM results it doesn't have.
 
 ## Pipeline overview
 
@@ -125,8 +170,159 @@ silently inflated.
 | File | Columns |
 | --- | --- |
 | `match_results.csv` | `profile_id, method, opportunity_id, rank, score, title, description` |
-| `evaluation_per_profile.csv` | metrics per profile × method (+ `n_relevant`, `n_strong`) |
-| `evaluation_summary.csv` | mean nDCG / Precision / Recall per method — the headline table |
+| `evaluation_per_profile.csv` | metrics per profile × method (+ `n_relevant`, `n_strong`, `scorable`, `target_rank`) |
+| `evaluation_summary.csv` | mean nDCG / Precision / Recall per method over **scorable** profiles |
+
+## Datasets
+
+| | `prototype` (default) | `synthetic_v2` |
+| --- | --- | --- |
+| Listings | 8 | 5 |
+| Profiles | 4 short, vague | 20 long-form |
+| Labels | hand-graded per pair | **derived** from `match_type` |
+| Positive labels/profile | 3–5 | exactly 1 (0 for distractors) |
+
+`prototype` reproduces the original verified numbers. `synthetic_v2` is the purpose-built
+benchmark: 5 listings × 4 match types (`exact_keyword`, `semantic_analogy`, `distractor`,
+`noisy_edge`), designed so the lexical/semantic contrast is measurable by stratum.
+
+## Two measurement problems in `synthetic_v2` (read before citing its numbers)
+
+**1. Derived labels are a lower bound, not ground truth.** Each profile is graded 2 at its
+`target_opp_id` (1 for `noisy_edge`, 0 for `distractor`) and **0 against every other
+listing**. Those negatives are an *assumption*, not an assessment — nobody judged whether a
+UAV-focused student would also suit the IoT lab. A retriever that finds a genuinely good
+cross-listing match is penalised for it, so absolute metrics are biased downward.
+`prototype`'s hand-graded labels do not have this problem.
+
+**2. Structural degeneracy.** Because relevance is concentrated on exactly one listing,
+every relevant set has size 1, so:
+- Recall@k is binary — 1.0 if the target is in Top-k, else 0.0.
+- Precision@k collapses to a near-constant 1/k.
+- nDCG@k reduces to "did the target land at rank 1" (with partial credit for rank 2).
+
+Only **nDCG@k** carries real signal; treat P/R as coarse sanity checks. To fix this properly,
+each profile needs graded labels against *several* listings — which means hand-grading, as
+`prototype` does.
+
+### How the harness handles the null-information rows
+
+Distractor profiles have no relevant listing, so every method scores them 0.0 *by
+construction*. Those rows cannot discriminate between retrievers and would dilute the mean,
+so they are:
+- **excluded from all reported means** (marked `scorable = False`, still written to CSV), and
+- re-evaluated as a **negative control** instead: the rank each method gave a listing the
+  profile has no domain fit for. Lower is better; the useful comparison is the random
+  baseline `(corpus_size + 1) / 2`.
+
+Distractors legitimately belong in the benchmark as a false-positive probe — it was the
+*scoring* of them that was wrong, not their inclusion.
+
+## Result: the new benchmark contradicts the hypothesis
+
+`synthetic_v2`, real MiniLM embeddings, k = 5:
+
+```
+match_type        Keyword (BM25)   Semantic (MiniLM)   Hybrid (0.6/0.4)
+exact_keyword          1.0000            1.0000             1.0000
+semantic_analogy       1.0000            0.9262             1.0000
+noisy_edge             0.9000            0.9000             0.9262
+```
+
+**BM25 wins the `semantic_analogy` stratum outright**, which was supposed to be the case it
+should lose. The mechanism is not that BM25 is secretly doing semantics — it is that the
+stratum is contaminated at the *corpus* level:
+
+> STU-009's circumlocutions (`home hypervisor`, `spaced copies`) match **no** building block
+> of the `VT-LNX-03` listing, but `.7` — the substring `proxmox` inside `Proxmox` in the
+> listing title — is *unique to that one listing in a 5-document corpus*. BM25's
+> anti-discrimination guard floors its negative IDF at 0, so a discriminant of `.7` is still
+> the single largest cosine contribution to that document. With only 5 listings, one stray
+> substring hit is enough to win.
+
+Empirically, *every* method put the target at rank 1 for 4 of 5 semantic profiles; the
+sequence was 1-1-1-1-2 against BM25's 1-1-1-1-1. So this is not evidence that keywords beat
+semantics — it is evidence that **a 5-document corpus cannot support the claim.** Rank-based
+similarity saturates, IDFs are unreliable, and rare-substring effects dominate.
+
+**Before this benchmark can test the hypothesis it needs** (a) substantially more listings
+(≥50, ideally with near-duplicate or overlapping-skill pairs), (b) hand-graded labels across
+multiple listings per profile, and (c) resolution of the `semantic_analogy` stratum's own
+keyword leakage (see `data/synthetic_v2_dataset.py`).
+
+## Performance
+
+Measured with `scripts/benchmark.py`, which times every pipeline phase independently so
+a total-speedup figure cannot hide a phase that regressed. The scale case is a synthetic
+2000-query x 200-listing corpus, because the real datasets are far too small for
+asymptotic behaviour to show up.
+
+| Phase | Before | After | Speedup |
+| --- | --- | --- | --- |
+| **Metric evaluation** (2000 x 200) | 46,650 ms | **12.9 ms** | **3,613x** |
+| Metric evaluation (20 queries) | 10.5 ms | 1.6 ms | 6.5x |
+| Metric evaluation (4 queries) | 2.8 ms | 1.6 ms | 1.8x |
+| **Query encoding**, real MiniLM, 512 queries | 5,081 ms | **1,474 ms** | **3.4x** |
+| Rank + metrics, end to end (2000 x 200) | 48,041 ms | 1,008 ms | 47.6x |
+
+### What was actually slow, and why
+
+**`evaluate_metrics` was quadratic, and it dominated everything.** `Dataset.relevance_for()`
+rescanned the entire `relevance_map` for every (profile, method) pair. At 2000 queries x 200
+listings that is 6,000 pairs x 400,000 entries ≈ **2.4 billion dict lookups** — 97% of total
+runtime. The fix is structural, not incremental: `Dataset` now materialises a dense
+(queries x listings) `int8` grade matrix once in `__post_init__`, making every lookup an
+O(1) array index. The ideal-DCG ordering is also precomputed once per dataset instead of
+being re-sorted per row.
+
+**Query encoding called the transformer once per query.** Each `encoder.encode([text])` call
+pays fixed overhead (tokenizer setup, tensor allocation) regardless of input length, so
+batching is nearly free performance. Query embeddings are now computed in batches and cosine
+similarity for the whole batch is a single matmul:
+
+```
+sims = query_embeddings @ doc_embeddings.T        # (Q x D) @ (D x C)
+```
+
+Both sides are L2-normalised, so the inner product *is* cosine similarity.
+
+**The tidy DataFrame was built per row.** `run_pipeline` accumulated one dict per
+(query x method x rank) result — 60 rows for the prototype, but 60,000 at the scale case.
+Results are now carried as aligned numpy arrays (`ResultTable`) and the long DataFrame is
+constructed once, with vectorised column ops, only on export.
+
+### Correctness was verified, not assumed
+
+Metrics were checked against a brute-force reference implementation (a direct port of the
+original scalar functions) across **20 randomised datasets with varying query/corpus sizes
+and k, 843 scored rows: 0 mismatches**. Ranking order is unchanged — ties still break by
+opportunity id, so runs remain byte-identical and reproducible.
+
+A verification harness earned its keep here. The first vectorised version of
+`evaluate_metrics` sliced the first *k columns* of the grade matrix instead of gathering
+grades at the *retrieved* indices — so all three retrievers were scored against the same
+listings and reported identical metrics. It looked like a plausible result. The stress test
+caught it, and `precision_at_k_matrix` was also divided by `k_eff` instead of the requested
+`k`, a silent discrepancy whenever `k` exceeds the corpus size. Both are fixed, with comments
+at the call sites explaining why the index gather is load-bearing.
+
+## Verification log (what has actually been checked)
+
+| Claim | Method | Result |
+| --- | --- | --- |
+| Refactor preserves metrics | run prototype + synthetic_v2, diff summary CSVs | byte-identical |
+| Vectorised metrics are correct | 20 random datasets, 843 rows vs brute-force reference | 0 mismatches |
+| Methods are not degenerate | check BM25 vs Semantic rankings differ | 20/20 cases differ |
+| `prototype` baseline (real MiniLM) | `mean_ndcg@k` | 0.7046 / 0.8846 / 0.8364 |
+| `synthetic_v2` baseline (real MiniLM) | `mean_ndcg@k` | 0.9667 / 0.9421 / 0.9754 |
+| Export schema unchanged | inspect `match_results.csv` header | 7 expected columns |
+| Error handling | `--dataset nope` | clean argparse failure, exit 2 |
+
+Known reproduction command for the headline number:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\benchmark.py --scale 2000 --repeat 3
+```
 
 ## Prototype finding (mock data, k = 5)
 
