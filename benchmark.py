@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 
 MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 KEYWORD_WEIGHT = 0.6
 RRF_K = 60
 
@@ -48,9 +49,10 @@ def rank(scores, ids):
     return sorted(range(len(ids)), key=lambda i: (-float(scores[i]), ids[i]))
 
 
-def hybrid_scores(keyword_order, semantic_order):
+def hybrid_scores(keyword_order, semantic_order, keyword_has_signal=True):
     scores = [0.0] * len(keyword_order)
-    for weight, order in ((KEYWORD_WEIGHT, keyword_order),
+    # With no keyword evidence, ID-based BM25 ties must not influence fusion.
+    for weight, order in ((KEYWORD_WEIGHT if keyword_has_signal else 0, keyword_order),
                           (1 - KEYWORD_WEIGHT, semantic_order)):
         for position, index in enumerate(order, 1):
             scores[index] += weight / (RRF_K + position)
@@ -77,13 +79,16 @@ def evaluate(profile_id, method, top_ids, all_ids, labels):
     complete_top = all((profile_id, oid) in labels for oid in top_ids)
     complete_corpus = all((profile_id, oid) in labels for oid in all_ids)
     precision = ""
+    recall = ""
     ndcg = ""
     status = "missing_top10_labels"
     if complete_top:
         grades = [labels[(profile_id, oid)] for oid in top_ids]
         precision = sum(grade > 0 for grade in grades) / len(grades)
-        status = "missing_corpus_labels_for_ndcg"
+        status = "missing_corpus_labels_for_ndcg_and_recall"
         if complete_corpus:
+            relevant_count = sum(labels[(profile_id, oid)] > 0 for oid in all_ids)
+            recall = sum(grade > 0 for grade in grades) / relevant_count if relevant_count else ""
             ideal = sorted((labels[(profile_id, oid)] for oid in all_ids),
                            reverse=True)[:len(top_ids)]
             dcg = lambda values: sum((2 ** grade - 1) / math.log2(i + 2)
@@ -93,7 +98,7 @@ def evaluate(profile_id, method, top_ids, all_ids, labels):
             status = "complete" if denominator else "no_relevant_opportunities"
     return {"profile_id": profile_id, "method": method,
             "returned": len(top_ids), "precision_at_10": precision,
-            "ndcg_at_10": ndcg, "status": status}
+            "recall_at_10": recall, "ndcg_at_10": ndcg, "status": status}
 
 
 def main():
@@ -118,8 +123,8 @@ def main():
             raise ValueError("Each opportunity needs at least one searchable word")
         if any(not tokenize(row["query"]) for row in profiles):
             raise ValueError("Each query needs at least one searchable word")
-        bm25 = BM25Okapi(tokens)
-        model = SentenceTransformer(MODEL, device="cpu")
+        bm25 = BM25Okapi(tokens, k1=1.5, b=0.75, epsilon=0.25)
+        model = SentenceTransformer(MODEL, revision=MODEL_REVISION, device="cpu")
         vectors = model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
         queries = model.encode([row["query"] for row in profiles],
                                normalize_embeddings=True, show_progress_bar=False)
@@ -127,7 +132,8 @@ def main():
         for profile, query_vector in zip(profiles, queries):
             keyword = bm25.get_scores(tokenize(profile["query"]))
             semantic = np.asarray(vectors) @ query_vector
-            hybrid = hybrid_scores(rank(keyword, ids), rank(semantic, ids))
+            hybrid = hybrid_scores(rank(keyword, ids), rank(semantic, ids),
+                                   keyword_has_signal=bool(np.any(keyword != 0)))
             for method, scores in (("bm25", keyword), ("semantic", semantic),
                                    ("hybrid", hybrid)):
                 top = rank(scores, ids)[:10]
@@ -145,13 +151,13 @@ def main():
         print(f"Wrote {root / 'results.csv'}")
         # Always replace this file, so an earlier labeled run cannot leave stale metrics.
         write_csv(root / "metrics.csv", ("profile_id", "method", "returned", "precision_at_10",
-                                         "ndcg_at_10", "status"), metrics)
+                                         "recall_at_10", "ndcg_at_10", "status"), metrics)
         if labels is None:
             print("No relevance.csv: metrics.csv contains headers only.")
         else:
             print(f"Wrote {root / 'metrics.csv'}; inspect status for incomplete labels.")
             for method in ("bm25", "semantic", "hybrid"):
-                for metric in ("precision_at_10", "ndcg_at_10"):
+                for metric in ("precision_at_10", "recall_at_10", "ndcg_at_10"):
                     values = [row[metric] for row in metrics
                               if row["method"] == method and row[metric] != ""]
                     if values:
