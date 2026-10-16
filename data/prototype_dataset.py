@@ -255,8 +255,10 @@ def load() -> Dataset:
     return Dataset(
         name="prototype",
         description=(
+            # ASCII only: this string is printed to a Windows console, whose
+            # default codepage renders em-dashes as mojibake.
             "Original prototype: 8 listings, 4 short/vague profiles, "
-            "hand-graded labels — these are the numbers recorded in the README."
+            "hand-graded labels (these are the numbers recorded in the README)."
         ),
         opportunities=opportunities,
         queries=queries,

@@ -5,6 +5,20 @@ it is the part to have memorised before you stand up.
 
 ---
 
+## THE SINGLE COMMAND TO RUN
+
+Once setup (section 1) is done, this one command does the whole presentation:
+
+```powershell
+.\\.venv\\Scripts\\python.exe scripts\\reproduce.py
+```
+
+It runs both datasets through all three conditions, **prints** the results, sweeps
+the hybrid weight, shows live timings, verifies every number against `docs/RESULTS.md`,
+and writes the CSVs to `results/`. Exit code 0 means the numbers shown are current.
+
+Add `--offline` only if there is no model cache (see section 6 - it changes the results).
+
 ## 1. One-command setup
 
 ```powershell
@@ -24,7 +38,7 @@ cache. Do this **before** presenting, on the machine you will present from.
 ## 2. Verify everything works (do this before the demo)
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q          # expect: 69 passed
+.\\.venv\\Scripts\\python.exe -m pytest -q          # expect: 71 passed
 .\.venv\Scripts\python.exe scripts\reproduce.py  # expect: "all reported values reproduced"
 ```
 
@@ -59,10 +73,10 @@ Rehearse this once. Each command either prints something striking or produces an
 
 | Command | The one-sentence takeaway |
 | --- | --- |
-| (a) | Semantic leads (nDCG 0.885); the **default** hybrid is worse than pure semantic (0.836) — a 0.6 keyword weight is too strong. |
-| (b) | The sweep peaks at 0.4, above pure semantic (0.903 vs 0.885) — so a *mild* keyword signal helps and a strong one hurts. The default is simply mistuned. |
-| (c) | Every condition puts the target at rank 1 almost always: **a 5-listing corpus cannot resolve this question.** That is a finding about the benchmark, not the method. |
-| (d) | `evaluate_metrics` went from 46.7 s to 12.9 ms. The refactor removed a quadratic, not just constant overhead. |
+| (a) | Semantic leads (nDCG 0.885); the **default** hybrid is worse than pure semantic (0.836) - a 0.6 keyword weight is too strong. |
+| (b) | The full report: all three conditions, per-profile detail, and the verification verdict. |
+| (c) | The sweep peaks at 0.4, above pure semantic (0.903 vs 0.885) - so a *mild* keyword signal helps and a strong one hurts. The default is simply mistuned. |
+| (d) | `evaluate_metrics` went from 46.7 s to 12.9 ms at scale. The refactor removed a quadratic, not just constant overhead. |
 
 ## 4. Presenter cheat sheet
 
@@ -183,8 +197,8 @@ a result.
 | --- | --- |
 | `research_matching_pipeline.py` | All retrieval + metric logic. No data. |
 | `data/` | Datasets, loaders, canonical schema. |
-| `tests/` | 69 tests: metrics vs brute force, retrieval properties, dataset contracts, pinned baselines, CLI. |
-| `scripts/reproduce.py` | Regenerates + verifies every reported number, writes `results/`. |
+| `tests/` | 71 tests: metrics vs brute force, retrieval properties, dataset contracts, pinned baselines, CLI. |
+| `scripts/reproduce.py` | **The presentation command.** Prints everything and verifies it. |
 | `scripts/sweep.py` | Hybrid weight sweep (the M4 experiment). |
 | `scripts/benchmark.py` | Phase-by-phase timing harness. |
 | `results/` | **Committed** CSV artifact from the reproduction run. |
@@ -211,22 +225,22 @@ Proactively stating these is stronger than being asked about them.
 
 ## 10. Practical checks before you walk in
 
-- [ ] `pytest -q` → 69 passed
-- [ ] `scripts/reproduce.py` → "all reported values reproduced" (exit 0)
-- [ ] `scripts/sweep.py` → runs and prints the weight curve
-- [ ] MiniLM already cached (run command (a) once; it should take ~2 s, not ~30 s)
-- [ ] **Close `results/*.csv` in Excel/preview before any demo that writes them** —
-      `reproduce.py` needs write access and will say so if the file is locked
+- [ ] `pytest -q` -> 71 passed
+- [ ] `scripts/reproduce.py` -> "all reported values reproduced" (exit 0)
+- [ ] MiniLM already cached: `scripts/reproduce.py` should finish in ~2 s, not ~30 s
+- [ ] **Close `results/*.csv` in Excel/preview before presenting** - a locked file
+      only produces a warning now, but the CSVs will not refresh
 - [ ] Terminal font size increased for the room
 - [ ] `results/` and `docs/RESULTS.md` open in tabs as backup if the live demo fails
-- [ ] Can state the three caveats in §4 from memory
-- [ ] Know the offline trap in §6
+- [ ] Can state the three caveats in section 4 from memory
+- [ ] Know the offline trap in section 6
 
 ## 11. If the demo breaks live
 
 | Symptom | Cause | Recovery |
 | --- | --- | --- |
-| `ERROR: cannot write ... locked by another process` | CSV open in Excel/preview | Close it, re-run. Or point `--output-dir` elsewhere. |
+| `results/... is locked` warning | CSV open in Excel/preview | Harmless: values are still verified. Close it and re-run to refresh the CSVs. |
 | Semantic score ≈ 0.68, below BM25 | `--offline-embeddings` is active | Drop the flag for the real model, or say you are showing the lexical fallback |
 | Slow first run (~30 s hang) | MiniLM downloading | Expected only on a cold cache; pre-warm before presenting |
 | A pinned value drifts | Something genuinely changed | Show `docs/RESULTS.md` and `results/` from the commit instead |
+| `python: command not found` | venv not created / wrong shell | Use the full `.\\.venv\\Scripts\\python.exe` path as in section 1 |

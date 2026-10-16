@@ -34,12 +34,13 @@ from the searchable body. Ties break on opportunity ID, so runs are reproducible
 
 ## Verify (do this before presenting)
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q          # 69 tests
+.\.venv\Scripts\python.exe -m pytest -q          # 71 tests
 .\.venv\Scripts\python.exe scripts\reproduce.py  # checks all reported values
 ```
-`scripts/reproduce.py` re-runs both datasets, writes `results/`, and **fails if any number has
-drifted** from `docs/RESULTS.md`. `pytest -m "not slow"` skips the tests needing the MiniLM
-model (65 tests, no download).
+`scripts/reproduce.py` is also **the command to run when presenting**: it runs both datasets
+through all three conditions, prints the results, sweeps the hybrid weight, shows live
+timings, verifies every number against `docs/RESULTS.md`, and writes `results/`.
+`pytest -m "not slow"` skips the tests needing the MiniLM model (65 tests, no download).
 
 ## Run
 ```powershell
