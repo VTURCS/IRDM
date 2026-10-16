@@ -138,7 +138,7 @@ def test_opportunity_col_lookup_raises_for_unknown_listing() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", ["prototype", "synthetic_v2"])
+@pytest.mark.parametrize("name", ["prototype", "synthetic_v2", "main_demo", "heldout"])
 def test_registered_datasets_load_fully_labelled(name: str) -> None:
     """Every shipped dataset must satisfy the label-completeness contract."""
     import research_matching_pipeline as rmp

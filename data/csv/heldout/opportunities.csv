@@ -1,0 +1,31 @@
+id,title,description,skills
+H01,Legged robot locomotion,Develop control algorithms that let four-legged robots walk over uneven terrain. Students tune controllers in simulation and test them on hardware.,C++; ROS; Control Systems
+H02,Warehouse robot arm grasping,Teach a robotic manipulator to pick irregular objects from bins using depth cameras and learned grasp detection.,Python; PyTorch; Computer Vision
+H03,Underwater vehicle mapping,Program autonomous underwater vehicles to map reservoir floors with sonar and plan efficient survey paths.,Python; Path Planning; Sensors
+H04,Medical image segmentation,Train neural networks to outline tumors in MRI scans and measure agreement with radiologists.,Python; Deep Learning; Medical Imaging
+H05,Fake news detection with language models,Fine-tune transformer language models to flag misleading social media posts and study annotator disagreement.,NLP; Python; Transformers
+H06,Speech recognition for Appalachian dialects,Collect and transcribe regional speech recordings and adapt automatic speech recognition models to underrepresented dialects.,Python; Audio Processing; Linguistics
+H07,Crop yield prediction from satellites,Combine satellite imagery and weather records to forecast corn and soybean yields across Virginia counties.,Python; Remote Sensing; Machine Learning
+H08,Headwater stream chemistry,Measure nitrate and phosphorus in mountain streams after storms and relate pollution pulses to land use.,Field Sampling; Water Chemistry; R
+H09,Wetland bird surveys,Conduct dawn point counts of marsh birds and model how habitat restoration affects species occupancy.,Field Work; Ecology; R
+H10,Pollinator decline on farmland,Track bumblebee visits to wildflowers on restored farmland and test pesticide exposure in hive samples.,Entomology; Field Work; Statistics
+H11,Concrete durability with recycled glass,Cast and test concrete mixes containing recycled glass to evaluate cracking and freeze-thaw durability.,Materials Testing; Civil Engineering
+H12,Bridge vibration monitoring,Install vibration sensors on pedestrian bridges and analyze signals to detect structural damage early.,MATLAB; Signal Processing; Structural Engineering
+H13,Battery cathode synthesis,Synthesize new cathode materials for lithium-ion batteries and characterize them with X-ray diffraction.,Chemistry; Lab Safety; Materials Characterization
+H14,Wind turbine blade aerodynamics,Run computational fluid dynamics simulations of turbine blades and validate predictions in the wind tunnel.,CFD; MATLAB; Fluid Mechanics
+H15,Small satellite attitude control,Design and test the pointing control system for a student-built CubeSat mission.,C; Embedded Systems; Control Systems
+H16,Game engine physics optimization,Profile and speed up physics simulation code in an open-source game engine.,C++; Performance Optimization; Graphics
+H17,Smart home device security,Find vulnerabilities in consumer Internet of Things devices through firmware analysis and network traffic inspection.,Networking; Linux; Reverse Engineering
+H18,Social app privacy attitudes,Interview and survey college students about how they manage privacy settings on social apps.,Survey Design; Qualitative Coding; Psychology
+H19,Toddler vocabulary growth,Record toddlers playing with parents and code how vocabulary grows between 18 and 30 months.,Developmental Psychology; Video Coding
+H20,Adolescent sleep and mood,Use wearable trackers and daily diaries to study how sleep affects teenagers' mood and stress.,Psychology; Statistics; R
+H21,Civil War letters digitization,Transcribe and annotate soldiers' letters from the Civil War era and publish them in an online archive.,History; Archival Research; TEI
+H22,Renaissance choral manuscripts,Edit and encode sixteenth-century choral music manuscripts for a digital edition.,Music Theory; Paleography
+H23,Village savings groups,Analyze loan repayment data from village savings groups to understand financial inclusion.,Economics; Stata; Statistics
+H24,Investor sentiment and stock returns,Relate online investor sentiment to daily stock returns using text mining and econometric models.,Python; Finance; Econometrics
+H25,School cafeteria menus,Evaluate how redesigned school cafeteria menus change what elementary students eat and waste.,Nutrition; Data Collection; Public Health
+H26,Appalachian overdose mapping,Map county-level overdose trends in Appalachia and examine access to treatment facilities.,GIS; Public Health; Epidemiology
+H27,Cattle rumen microbiome,Sequence rumen microbes in beef cattle and link community composition to feed efficiency.,Microbiology; Bioinformatics; R
+H28,Tick-borne disease surveillance,Drag-sample ticks in state parks and test them for Lyme disease bacteria with PCR.,Field Work; Molecular Biology; PCR
+H29,Accessible university websites,Redesign university web pages for screen-reader users and run usability tests with blind participants.,HTML; Accessibility; Usability Testing
+H30,Urban heat islands,Deploy temperature loggers across Roanoke neighborhoods and relate heat exposure to tree canopy and income.,GIS; Climate Science; Field Work

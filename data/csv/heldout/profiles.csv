@@ -1,0 +1,25 @@
+id,query,match_type
+Q01,Robot grasping with computer vision and PyTorch,exact
+Q02,Machines that walk on legs,paraphrase
+Q03,I like being outside and want to help nature,vague
+Q04,C++ programmer who wants to make code run faster,token
+Q05,Teaching computers to understand human writing,paraphrase
+Q06,Stream water pollution and nitrate sampling,exact
+Q07,Pre-med student interested in helping patients,vague
+Q08,Old handwritten documents from the past,paraphrase
+Q09,GIS mapping for public health,exact
+Q10,Quantum computing algorithms,nomatch
+Q11,I want to work with the people,vague
+Q12,R programming and statistics for ecology,token
+Q13,Keeping hackers out of gadgets in people's houses,paraphrase
+Q14,"Junior in aerospace engineering. I have used MATLAB for control design and enjoy spacecraft, rockets and anything that flies. Looking for hands-on hardware.",long
+Q15,Economics of poverty and banking for the poor,paraphrase
+Q16,How babies learn to talk,paraphrase
+Q17,Recycled materials in construction,exact
+Q18,Clean energy and batteries,vague
+Q19,Kids eating healthier food at school,paraphrase
+Q20,Livestock and agriculture,vague
+Q21,Insects and the diseases they spread,paraphrase
+Q22,Making websites usable for people with disabilities,paraphrase
+Q23,Sculpture and ceramic art,nomatch
+Q24,ML for MRI,token

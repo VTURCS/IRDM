@@ -8,8 +8,10 @@
 | --- | --- |
 | `research_matching_pipeline.py` | **Pure logic** — retrievers, hybrid fusion, metrics, report, CSV export. Contains no data. |
 | `data/` | All datasets + the canonical schema (see below) |
+| `data/csv_dataset.py`, `data/csv/` | CSV folder input format (`--data-dir`) and the datasets bundled in it |
 | `scripts/benchmark.py` | Phase-by-phase timing harness (before/after comparison) |
-| `requirements.txt` | Dependencies |
+| `requirements.txt` | Dependencies (unpinned) |
+| `requirements-lock.txt` | Exact tested environment (Python 3.13, Windows, CPU torch) |
 | `outputs/<dataset>/` | Generated CSVs (created on first run, git-ignored) |
 
 

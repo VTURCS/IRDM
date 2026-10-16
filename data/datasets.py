@@ -11,16 +11,23 @@ registry key, so the name reported in exports always matches the data used.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Callable, Dict, List, Sequence
 
 from data import prototype_dataset, synthetic_v2_dataset
+from data.csv_dataset import load_csv_dataset
 from data.schema import Dataset, Opportunity, Query
+
+# Bundled datasets stored in the CSV folder format (see data/csv_dataset.py).
+CSV_DIR = Path(__file__).resolve().parent / "csv"
 
 # Loader signature: (allowed_match_types) -> Dataset. Loaders that do not
 # support label stratification simply ignore the argument.
 _LOADERS: Dict[str, Callable[[Sequence[str] | None], Dataset]] = {
     "prototype": lambda match_types=None: prototype_dataset.load(),
     "synthetic_v2": lambda match_types=None: synthetic_v2_dataset.load(match_types),
+    "main_demo": lambda match_types=None: load_csv_dataset(CSV_DIR / "main_demo", "main_demo", match_types),
+    "heldout": lambda match_types=None: load_csv_dataset(CSV_DIR / "heldout", "heldout", match_types),
 }
 
 DEFAULT_DATASET = "prototype"
@@ -43,8 +50,8 @@ def load_dataset(
     name
         One of `available_datasets()`.
     match_types
-        Optional label-stratum filter (e.g. `("semantic_analogy",)`). Only the
-        `synthetic_v2` loader honours this; it is ignored elsewhere.
+        Optional label-stratum filter (e.g. `("semantic_analogy",)`). Honoured
+        by `synthetic_v2` and the CSV datasets; ignored by `prototype`.
     """
     if name not in _LOADERS:
         raise KeyError(

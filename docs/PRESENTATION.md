@@ -197,7 +197,7 @@ a result.
 | --- | --- |
 | `research_matching_pipeline.py` | All retrieval + metric logic. No data. |
 | `data/` | Datasets, loaders, canonical schema. |
-| `tests/` | 71 tests: metrics vs brute force, retrieval properties, dataset contracts, pinned baselines, CLI. |
+| `tests/` | 93 tests: metrics vs brute force, retrieval properties, dataset contracts, CSV input, pinned baselines, CLI. |
 | `scripts/reproduce.py` | **The presentation command.** Prints everything and verifies it. |
 | `scripts/sweep.py` | Hybrid weight sweep (the M4 experiment). |
 | `scripts/benchmark.py` | Phase-by-phase timing harness. |

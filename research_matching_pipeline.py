@@ -31,11 +31,16 @@ the `data` package, selected by name:
 
     prototype     (default) 8 listings, 4 short/vague profiles, hand-graded labels
     synthetic_v2            5 listings, 20 profiles, labels derived from match_type
+    main_demo               12 listings, 5 profiles - the `main` branch demo (CSV)
+    heldout                 30 listings, 24 typed profiles - held-out set (CSV)
+
+Any folder in the CSV format (see `data/csv_dataset.py`) runs via `--data-dir`.
 
 Run
 ---
     python research_matching_pipeline.py                        # prototype, offline fallback if needed
     python research_matching_pipeline.py --dataset synthetic_v2
+    python research_matching_pipeline.py --data-dir path/to/folder
     python research_matching_pipeline.py --dataset synthetic_v2 --match-type semantic_analogy
     python research_matching_pipeline.py --top-k 3 --bm25-weight 0.7
     python research_matching_pipeline.py --offline-embeddings   # no model download
@@ -58,8 +63,13 @@ import numpy as np
 import pandas as pd
 from rank_bm25 import BM25Okapi
 
-from data import DEFAULT_DATASET, available_datasets, load_dataset
+from data import DEFAULT_DATASET, available_datasets, load_csv_dataset, load_dataset
 from data.schema import Dataset, Opportunity, Query
+
+# The sentence encoder, pinned to an exact Hugging Face commit so an upstream
+# model update cannot silently change the semantic and hybrid results.
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 
 # --- re-exported for convenience -------------------------------------------
 # `from research_matching_pipeline import load_dataset` keeps ad-hoc analysis
@@ -117,11 +127,15 @@ class Config:
     # --- dataset selection ---------------------------------------------------
     dataset: str = DEFAULT_DATASET
     # Optional label-stratum filter, honoured by datasets that carry a
-    # `match_type` field (synthetic_v2). Ignored by others.
+    # `match_type` field (synthetic_v2, CSV datasets). Ignored by others.
     match_types: Tuple[str, ...] = ()
+    # Set when the data came from `--data-dir` instead of the registry; the
+    # dataset name is then the folder name and is not checked against it.
+    data_dir: str = ""
 
     # --- encoders ------------------------------------------------------------
-    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_model: str = EMBEDDING_MODEL
+    embedding_revision: str = EMBEDDING_REVISION
 
     # --- baseline switches (kept explicit so they cannot silently drift) -----
     metadata_filtering: bool = False
@@ -155,7 +169,7 @@ class Config:
                 f"Hybrid weights must sum to 1.0 (got {total:.3f}). "
                 "Adjust bm25_weight / semantic_weight."
             )
-        if self.dataset not in available_datasets():
+        if not self.data_dir and self.dataset not in available_datasets():
             raise ValueError(
                 f"Unknown dataset '{self.dataset}'. "
                 f"Available: {', '.join(available_datasets())}"
@@ -497,18 +511,25 @@ class HashedBoWEncoder:
         return vectors / norms
 
 
-def load_encoder(model_name: str, allow_fallback: bool = True):
+def load_encoder(
+    model_name: str,
+    allow_fallback: bool = True,
+    revision: str | None = EMBEDDING_REVISION,
+):
     """
     Load the sentence encoder, returning `(encoder, backend_name)`.
 
     `backend_name` is propagated into the report so every exported artefact
-    records whether embeddings were real (MiniLM) or the offline fallback.
+    records whether embeddings were real (MiniLM) or the offline fallback, and
+    which model revision produced them. `revision` defaults to the pinned
+    commit; pass None to take whatever the Hub currently serves.
     """
     try:
         from sentence_transformers import SentenceTransformer  # imported lazily
 
-        encoder = SentenceTransformer(model_name)
-        return encoder, f"sentence-transformers::{model_name}"
+        encoder = SentenceTransformer(model_name, revision=revision)
+        pinned = f"@{revision[:7]}" if revision else ""
+        return encoder, f"sentence-transformers::{model_name}{pinned}"
     except Exception as exc:  # ImportError, download failure, OOM, ...
         if not allow_fallback:
             raise
@@ -1209,12 +1230,22 @@ def _unit_interval(value: str) -> float:
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="VTURCS Team 1 - IRDM matching prototype")
-    parser.add_argument(
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument(
         "--dataset",
         type=str,
         default=DEFAULT_DATASET,
         choices=available_datasets(),
         help="which dataset to evaluate (see data/)",
+    )
+    source.add_argument(
+        "--data-dir",
+        type=Path,
+        default=None,
+        help=(
+            "evaluate a folder holding opportunities.csv, profiles.csv and "
+            "relevance.csv instead of a registered dataset (see data/csv_dataset.py)"
+        ),
     )
     parser.add_argument(
         "--match-type",
@@ -1223,8 +1254,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         metavar="TYPE",
         help=(
-            "restrict to profiles of these match_type strata "
-            "(synthetic_v2 only), e.g. --match-type semantic_analogy distractor"
+            "restrict to profiles of these match_type strata (synthetic_v2 and "
+            "CSV datasets with a match_type column), e.g. --match-type semantic_analogy distractor"
         ),
     )
     parser.add_argument(
@@ -1261,15 +1292,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Done first so a bad --dataset/--match-type combination fails immediately,
     # before any expensive encoder download.
     match_types = tuple(args.match_type) if args.match_type else ()
-    dataset = load_dataset(args.dataset, match_types or None)
+    if args.data_dir is not None:
+        # User-authored CSVs: report a bad file as a one-line error, not a traceback.
+        try:
+            dataset = load_csv_dataset(args.data_dir, match_types=match_types or None)
+        except (ValueError, OSError) as exc:
+            raise SystemExit(f"Error: {exc}") from exc
+    else:
+        dataset = load_dataset(args.dataset, match_types or None)
     top_k = args.top_k if args.top_k is not None else min(dataset.suggested_top_k, len(dataset.opportunities))
 
     cfg = Config(
         top_k=top_k,
         bm25_weight=args.bm25_weight,
         semantic_weight=round(1.0 - args.bm25_weight, 10),
-        dataset=args.dataset,
+        dataset=dataset.name if args.data_dir is not None else args.dataset,
         match_types=match_types,
+        data_dir=str(args.data_dir or ""),
         output_dir=args.output_dir,
         batch_size=args.batch_size,
     )
@@ -1280,7 +1319,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         encoder, backend_name = HashedBoWEncoder(), "offline-forced::hashed-bow"
         print("[info] --offline-embeddings set: using HashedBoW encoder (lexical proxy).")
     else:
-        encoder, backend_name = load_encoder(cfg.embedding_model, allow_fallback=True)
+        encoder, backend_name = load_encoder(
+            cfg.embedding_model, allow_fallback=True, revision=cfg.embedding_revision
+        )
 
     index = build_index(cfg, dataset, encoder, backend_name)
 

@@ -11,7 +11,7 @@ Last updated: 2026-10-16 | Severity: H / M / L | Owner: [TBD]
 | T4 | ~~Results CSVs are git-ignored, so no results artifact is committed.~~ **RESOLVED**: `results/` is committed (un-ignored) and produced by `scripts/reproduce.py`. | M | Done. |
 | T5 | `--offline-embeddings` replaces MiniLM with a lexical proxy; misreporting risk. | M | Keep backend label in all exports and tables. (Labels verified by test; see docs/PRESENTATION.md sec 6.) |
 | T6 | Two files named `benchmark.py` with different purposes (`main` vs `scripts/benchmark.py`). | L | Rename the timing harness (e.g. `scripts/timing.py`). |
-| T7 | Python guidance conflicts: docs say verified on 3.13, requirements.txt recommends 3.10-3.12. | L | Pin one tested version. |
+| T7 | ~~Python guidance conflicts: docs say verified on 3.13, requirements.txt recommends 3.10-3.12.~~ **ADDRESSED**: `requirements-lock.txt` pins the verified Python 3.13 environment and the MiniLM revision is pinned in code. | L | `requirements.txt` still suggests 3.10-3.12 as the safest torch range for unpinned installs. |
 | T8 | ~~MiniLM-based numbers are unreproduced by a second teammate.~~ **RESOLVED**: `scripts/reproduce.py` regenerates and verifies all reported values, and `tests/test_baselines.py` pins them. Committed environment recorded in docs/RESULTS.md. | M | Done. A teammate should still run it on a second machine to confirm. |
 | T9 | Presentation materials were spread across five docs with no run order or demo script. | L | **Addressed**: `docs/PRESENTATION.md` adds a runbook, demo sequence, cheat sheet, and offline-trap warning. |
 
