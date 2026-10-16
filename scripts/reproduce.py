@@ -81,19 +81,47 @@ def environment_report() -> str:
     return "\n".join(lines)
 
 
+def write_csv(frame: pd.DataFrame, path: Path) -> str | None:
+    """
+    Write a CSV, returning an error message instead of raising on a locked file.
+
+    On Windows a results CSV left open in Excel or a preview pane raises
+    PermissionError. That must not abort the run: the purpose of this script is
+    to CHECK values, and verification does not need write access. The write
+    failure is reported as a warning once the verification result is known, so a
+    presenter who has the CSV open still gets the answer they came for.
+    """
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_csv(path, index=False)
+        return None
+    except PermissionError:
+        return f"{path} is locked by another process (close Excel / preview panes)"
+    except OSError as exc:
+        return f"{path}: {exc}"
+
+
 def run_case(dataset_name: str, encoder, backend: str, top_k: int):
-    """Run one dataset through the pipeline and return its summary table."""
+    """
+    Run one dataset through the pipeline and return
+    (summary, method_names, write_warnings).
+    """
     dataset = rmp.load_dataset(dataset_name)
     cfg = rmp.Config(top_k=top_k, dataset=dataset_name)
     table = rmp.rank_candidates(rmp.build_index(cfg, dataset, encoder, backend), cfg)
     per_profile, summary = rmp.evaluate_metrics(table, dataset, k=top_k)
 
     out_dir = RESULTS_DIR / dataset_name
-    out_dir.mkdir(parents=True, exist_ok=True)
-    table.to_frame(dataset.opportunities).to_csv(out_dir / "match_results.csv", index=False)
-    per_profile.to_csv(out_dir / "evaluation_per_profile.csv", index=False)
-    summary.to_csv(out_dir / "evaluation_summary.csv", index=False)
-    return summary, table.method_names, out_dir
+    warnings = [
+        message
+        for message in (
+            write_csv(table.to_frame(dataset.opportunities), out_dir / "match_results.csv"),
+            write_csv(per_profile, out_dir / "evaluation_per_profile.csv"),
+            write_csv(summary, out_dir / "evaluation_summary.csv"),
+        )
+        if message
+    ]
+    return summary, table.method_names, out_dir, warnings
 
 
 def check(summary: pd.DataFrame, expected: dict) -> list[str]:
@@ -136,11 +164,15 @@ def main() -> int:
         encoder, backend = rmp.load_encoder("all-MiniLM-L6-v2", allow_fallback=False)
 
     all_problems: list[str] = []
+    all_warnings: list[str] = []
     for dataset_name in ("prototype", "synthetic_v2"):
-        summary, method_names, out_dir = run_case(dataset_name, encoder, backend, top_k=5)
+        summary, method_names, out_dir, warnings = run_case(dataset_name, encoder, backend, top_k=5)
+        all_warnings.extend(warnings)
 
         print(f"--- {dataset_name} ---")
-        print(pd.read_csv(out_dir / "evaluation_summary.csv").to_string(index=False))
+        # Print from the in-memory summary, not the file: the file may not have
+        # been written if it was locked, and the values are what matter here.
+        print(summary.to_string(index=False))
         print()
 
         expected = EXPECTED.get((dataset_name, backend_kind))
@@ -158,6 +190,12 @@ def main() -> int:
             print("  all pinned values matched")
         print()
 
+    if all_warnings:
+        print("WARNINGS (results could not be written; verification still valid):")
+        for warning in all_warnings:
+            print(f"  - {warning}")
+        print()
+
     print(RULE)
     if all_problems:
         print(f"RESULT: {len(all_problems)} value(s) drifted from docs/RESULTS.md")
@@ -166,7 +204,7 @@ def main() -> int:
         return 1
 
     print("RESULT: all reported values reproduced")
-    print(f"CSV artifacts written to {RESULTS_DIR.resolve()}")
+    print(f"Artifacts: {RESULTS_DIR.resolve()}")
     print(RULE)
     return 0
 

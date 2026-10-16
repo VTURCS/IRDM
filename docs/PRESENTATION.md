@@ -42,10 +42,7 @@ Rehearse this once. Each command either prints something striking or produces an
 
 ```powershell
 # (b) The ablation that explains the result: keyword weight 0.0 -> 1.0
-for ($w in 0.0, 0.3, 0.6, 1.0) {
-  .\.venv\Scripts\python.exe research_matching_pipeline.py --bm25-weight $w --output-dir outputs/sweep 2>&1 |
-    Select-String "mean_ndcg"
-}
+.\\.venv\\Scripts\\python.exe scripts\\sweep.py
 ```
 
 ```powershell
@@ -62,8 +59,8 @@ for ($w in 0.0, 0.3, 0.6, 1.0) {
 
 | Command | The one-sentence takeaway |
 | --- | --- |
-| (a) | Semantic leads (nDCG 0.885) and the keyword-prioritized hybrid is *worse* than pure semantic (0.836) — keyword priority hurts on vague queries. |
-| (b) | The gap is monotonic in the weight, so it is a property of the rule, not noise. |
+| (a) | Semantic leads (nDCG 0.885); the **default** hybrid is worse than pure semantic (0.836) — a 0.6 keyword weight is too strong. |
+| (b) | The sweep peaks at 0.4, above pure semantic (0.903 vs 0.885) — so a *mild* keyword signal helps and a strong one hurts. The default is simply mistuned. |
 | (c) | Every condition puts the target at rank 1 almost always: **a 5-listing corpus cannot resolve this question.** That is a finding about the benchmark, not the method. |
 | (d) | `evaluate_metrics` went from 46.7 s to 12.9 ms. The refactor removed a quadratic, not just constant overhead. |
 
@@ -90,11 +87,28 @@ filtering, no query expansion, eligibility text excluded from the searchable bod
 | **Semantic (MiniLM)** | **0.8846** | **0.65** | **0.8875** |
 | Hybrid (0.6 / 0.4) | 0.8364 | 0.65 | 0.8875 |
 
-**The mechanism for why the hybrid loses.** A listing that is a strong semantic
-match but shares no vocabulary with a vague query gets `bm25_norm = 0`, so it keeps
-only its 0.4 share — while a listing that overlaps lexically gets `bm25_norm = 1`
-and outranks it. Score-level fusion inherits BM25's brittleness to vocabulary
-mismatch by construction.
+**The mechanism for why the default hybrid loses.** A listing that is a strong semantic
+match but shares no vocabulary with a vague query gets `bm25_norm = 0`, so it keeps only its
+0.4 share — while a listing that overlaps lexically gets `bm25_norm = 1` and outranks it.
+Score-level fusion inherits BM25's brittleness to vocabulary mismatch by construction.
+
+**The weight sweep corrects the naive reading.** The hybrid does *not* simply lose to
+semantic — the default is mistuned:
+
+| bm25_weight | hybrid nDCG@5 |
+| --- | --- |
+| 0.0 (pure semantic) | 0.8846 |
+| 0.2 | 0.9011 |
+| 0.3 | 0.9004 |
+| **0.4** | **0.9030** |
+| 0.6 (current default) | 0.8364 |
+| 0.8 | 0.8239 |
+| 1.0 (pure BM25) | 0.7046 |
+
+A *mild* keyword weight beats pure semantic; a strong one hurts. The curve is stable in a
+region (0.2–0.4) and drops sharply after 0.4, so the shape is more trustworthy than the
+exact argmax. State the caveat: with 4 profiles a 0.02 nDCG difference is **one rank change
+in one profile**, so do not claim 0.4 is optimal — claim the default is too high.
 
 **Three honest caveats to state before anyone asks:**
 
@@ -171,6 +185,7 @@ a result.
 | `data/` | Datasets, loaders, canonical schema. |
 | `tests/` | 69 tests: metrics vs brute force, retrieval properties, dataset contracts, pinned baselines, CLI. |
 | `scripts/reproduce.py` | Regenerates + verifies every reported number, writes `results/`. |
+| `scripts/sweep.py` | Hybrid weight sweep (the M4 experiment). |
 | `scripts/benchmark.py` | Phase-by-phase timing harness. |
 | `results/` | **Committed** CSV artifact from the reproduction run. |
 | `docs/RESULTS.md` | Reported numbers. |
@@ -198,8 +213,20 @@ Proactively stating these is stronger than being asked about them.
 
 - [ ] `pytest -q` → 69 passed
 - [ ] `scripts/reproduce.py` → "all reported values reproduced" (exit 0)
+- [ ] `scripts/sweep.py` → runs and prints the weight curve
 - [ ] MiniLM already cached (run command (a) once; it should take ~2 s, not ~30 s)
+- [ ] **Close `results/*.csv` in Excel/preview before any demo that writes them** —
+      `reproduce.py` needs write access and will say so if the file is locked
 - [ ] Terminal font size increased for the room
 - [ ] `results/` and `docs/RESULTS.md` open in tabs as backup if the live demo fails
 - [ ] Can state the three caveats in §4 from memory
 - [ ] Know the offline trap in §6
+
+## 11. If the demo breaks live
+
+| Symptom | Cause | Recovery |
+| --- | --- | --- |
+| `ERROR: cannot write ... locked by another process` | CSV open in Excel/preview | Close it, re-run. Or point `--output-dir` elsewhere. |
+| Semantic score ≈ 0.68, below BM25 | `--offline-embeddings` is active | Drop the flag for the real model, or say you are showing the lexical fallback |
+| Slow first run (~30 s hang) | MiniLM downloading | Expected only on a cold cache; pre-warm before presenting |
+| A pinned value drifts | Something genuinely changed | Show `docs/RESULTS.md` and `results/` from the commit instead |

@@ -21,7 +21,7 @@ Last updated: 2026-10-16 | Severity: H / M / L | Owner: [TBD]
 | M1 | `synthetic_v2` labels are derived from `match_type`: exactly one relevant listing per profile, all other pairs assumed 0. This biases absolute metrics downward and penalizes valid cross-matches. | H | Hand-grade multiple listings per profile. |
 | M2 | Structural degeneracy in `synthetic_v2`: P@k ~ 1/k, Recall is binary, nDCG reduces to rank-1 success. Only nDCG is informative. | M | Resolve via M1. |
 | M3 | Keyword leakage in the `semantic_analogy` stratum (a substring hit let BM25 win). A 5-document corpus cannot support claims about keyword vs semantic. | H | Larger corpus; remove leakage from profiles. |
-| M4 | Hybrid is min-max score blending with keyword priority (0.6/0.4). On the 4-profile prototype, hybrid scores below pure semantic. Weight is not yet tuned. | M | Run `--bm25-weight` sweep (0.0-1.0) before drawing conclusions. |
+| M4 | Hybrid is min-max score blending with keyword priority (0.6/0.4). **Sweep run (2026-10-16)**: the default 0.6 is mistuned - nDCG@5 peaks at weight 0.4 (0.9030) vs 0.8846 for pure semantic and 0.8364 at 0.6. | M | Decide whether to change the default to ~0.3-0.4, and re-run the sweep on the expanded corpus before treating the argmax as real. See docs/RESULTS.md. |
 | M5 | Labels are single-rater and hand-written; no inter-rater agreement. | M | Second rater on a subset; compute agreement. |
 | M6 | Corpus is synthetic, not real public VT listings, while the RQ concerns VT opportunities. | H | Collect real public listings. |
 | M7 | Only 4 profiles in the hand-graded set; one rank change moves means noticeably. | M | More profiles; report per-profile results. |

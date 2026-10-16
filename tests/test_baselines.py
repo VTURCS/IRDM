@@ -210,3 +210,54 @@ def test_bm25_weight_sweep_spans_pure_conditions() -> None:
 
     assert keyword_only == pytest.approx(by_method.loc[table.method_names[0], "mean_ndcg@k"], abs=1e-4)
     assert semantic_only == pytest.approx(by_method.loc[table.method_names[1], "mean_ndcg@k"], abs=1e-4)
+
+
+def test_sweep_weight_actually_moves_results() -> None:
+    """
+    The weight must have an observable effect on the metric, not just on the label.
+
+    Guards against a wiring bug where the hybrid silently ignores `bm25_weight`
+    (which would still print the right label but compute the same ranking).
+    """
+    dataset = rmp.load_dataset("prototype")
+    encoder = rmp.HashedBoWEncoder()
+
+    def hybrid_ndcg(weight: float) -> float:
+        cfg = rmp.Config(top_k=5, bm25_weight=weight, semantic_weight=1.0 - weight, dataset="prototype")
+        table = rmp.rank_candidates(rmp.build_index(cfg, dataset, encoder, "t::h"), cfg)
+        _, summary = rmp.evaluate_metrics(table, dataset, k=5)
+        return float(summary.set_index("method").loc[table.method_names[2], "mean_ndcg@k"])
+
+    # The two extremes reproduce different pure conditions, so they must differ.
+    assert hybrid_ndcg(0.0) != pytest.approx(hybrid_ndcg(1.0), abs=1e-6)
+
+
+@pytest.mark.slow
+def test_minilm_sweep_default_is_not_optimal() -> None:
+    """
+    Pin the M4 finding: on the prototype set the default 0.6 keyword weight is
+    mistuned relative to a milder 0.4.
+
+    This is a *documented* result (docs/RESULTS.md), so it is asserted rather
+    than left to a prose claim. Note the caveat recorded there: with 4 profiles
+    the ~0.07 gap is small in rank terms, so this pins the direction, and the
+    stable region (0.2-0.4) is the trustworthy part of the curve.
+    """
+    encoder, backend = _minilm_or_skip()
+    dataset = rmp.load_dataset("prototype")
+
+    def hybrid_ndcg(weight: float) -> float:
+        cfg = rmp.Config(top_k=5, bm25_weight=weight, semantic_weight=1.0 - weight, dataset="prototype")
+        table = rmp.rank_candidates(rmp.build_index(cfg, dataset, encoder, backend), cfg)
+        _, summary = rmp.evaluate_metrics(table, dataset, k=5)
+        return float(summary.set_index("method").loc[table.method_names[2], "mean_ndcg@k"])
+
+    at_default = hybrid_ndcg(0.6)
+    at_mild = hybrid_ndcg(0.4)
+
+    assert at_mild > at_default, (
+        f"expected the mild keyword weight to beat the 0.6 default "
+        f"(0.4 -> {at_mild:.4f}, 0.6 -> {at_default:.4f})"
+    )
+    assert at_default == pytest.approx(0.8364, abs=1e-4)
+    assert at_mild == pytest.approx(0.9030, abs=1e-4)
