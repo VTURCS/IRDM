@@ -26,19 +26,32 @@ from the searchable body. Ties break on opportunity ID, so runs are reproducible
 
 ## Evaluation
 - **nDCG@k** (primary): gain `2^grade - 1`, normalized by the ideal ranking.
-- **Precision@k:** grade >= 1 counts as relevant, divided by k.
+- **Precision@k:** grade >= 1 counts as relevant, divided by the requested k.
 - **Recall@k:** grade >= 1 relevant listings found in top k, over all relevant listings.
-- **k = 5 for Prototype v1** because the corpus has only 8 listings. @10 is deferred
-  until the corpus is larger (see OPEN_ISSUES.md). Means cover scorable profiles only.
+- **k = 5 for Prototype v1**: the requirement is @10, but Top-10 would be nearly the whole
+  corpus (4 profiles x 8 listings), so @5 is reported and @10 is deferred until the corpus
+  is expanded (see OPEN_ISSUES T1). Means cover scorable profiles only.
+
+## Verify (do this before presenting)
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q          # 69 tests
+.\.venv\Scripts\python.exe scripts\reproduce.py  # checks all reported values
+```
+`scripts/reproduce.py` re-runs both datasets, writes `results/`, and **fails if any number has
+drifted** from `docs/RESULTS.md`. `pytest -m "not slow"` skips the tests needing the MiniLM
+model (65 tests, no download).
 
 ## Run
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt   # pytest
 .\.venv\Scripts\python.exe research_matching_pipeline.py                        # prototype
 .\.venv\Scripts\python.exe research_matching_pipeline.py --dataset synthetic_v2
+.\.venv\Scripts\python.exe research_matching_pipeline.py --bm25-weight 0.0        # weight sweep
 ```
-First run downloads MiniLM (~90 MB). Python 3.10-3.12 is the safest interpreter.
+Verified on **Python 3.13** with numpy 2.5.3, pandas 3.0.6, torch 2.14.1+cpu.
+The first run downloads MiniLM (~90 MB); later runs are offline.
 
 ## Test
 Smoke test with no model download (`--offline-embeddings`):
@@ -46,8 +59,11 @@ Smoke test with no model download (`--offline-embeddings`):
 .\.venv\Scripts\python.exe research_matching_pipeline.py --offline-embeddings --output-dir outputs/smoke
 ```
 Expect three CSVs in `outputs/smoke/prototype/`. **Caution:** in this mode the "semantic"
-condition is a hashed bag-of-words proxy, not MiniLM, so never report it as a MiniLM result.
+condition is a hashed bag-of-words proxy, not MiniLM. It scores *below* BM25 (0.6818 vs
+0.7046 nDCG@5), so an offline run is not comparable to the headline numbers. Check the
+method label before quoting any value.
 
 ## More
-Results: `docs/RESULTS.md` | Limitations: `OPEN_ISSUES.md`
+**Presentation: `docs/PRESENTATION.md`** (runbook, demo script, cheat sheet)
+Results: `docs/RESULTS.md` | Limitations: `OPEN_ISSUES.md` | Artifact: `results/`
 Design notes, verification log, performance work: `docs/`

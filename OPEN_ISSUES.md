@@ -1,18 +1,19 @@
 # Open Issues Log: Prototype v1
 
-Last updated: 2026-10-12 | Severity: H / M / L | Owner: [TBD]
+Last updated: 2026-10-16 | Severity: H / M / L | Owner: [TBD]
 
 ## Technical
 | # | Issue | Sev | Next step |
 |---|---|---|---|
 | T1 | Corpus is 8 listings (`prototype`) and 5 (`synthetic_v2`), so Top-10 would be nearly the whole corpus. Prototype v1 reports k=5, not the required @10. | H | Expand to >=50 listings (README target), then report @10. Until then, document the deviation. |
 | T2 | Two implementations disagree: RRF hybrid (`main`) vs min-max hybrid (`Sai_Prototype`); P@10/nDCG@10 (`main`) vs @5 + Recall (`Sai_Prototype`). | H | Team decision on one hybrid for the primary condition; keep the other as an ablation. |
-| T3 | No committed tests. The brute-force metric verification described in docs/verification_log.md is not in the repo. | M | Add `tests/` with a metric sanity check and a smoke run. |
-| T4 | Results CSVs are git-ignored, so no results artifact is committed. | M | Commit a snapshot under `docs/` or `results/`. |
-| T5 | `--offline-embeddings` replaces MiniLM with a lexical proxy; misreporting risk. | M | Keep backend label in all exports and tables. |
+| T3 | ~~No committed tests.~~ **RESOLVED**: `tests/` added - 69 tests covering metric equivalence vs brute force, retrieval properties, dataset validation contracts, pinned baselines, and CLI/export behaviour. | M | Done. Run `pytest -q`. |
+| T4 | ~~Results CSVs are git-ignored, so no results artifact is committed.~~ **RESOLVED**: `results/` is committed (un-ignored) and produced by `scripts/reproduce.py`. | M | Done. |
+| T5 | `--offline-embeddings` replaces MiniLM with a lexical proxy; misreporting risk. | M | Keep backend label in all exports and tables. (Labels verified by test; see docs/PRESENTATION.md sec 6.) |
 | T6 | Two files named `benchmark.py` with different purposes (`main` vs `scripts/benchmark.py`). | L | Rename the timing harness (e.g. `scripts/timing.py`). |
 | T7 | Python guidance conflicts: docs say verified on 3.13, requirements.txt recommends 3.10-3.12. | L | Pin one tested version. |
-| T8 | MiniLM-based numbers are unreproduced by a second teammate. | M | Re-run with real MiniLM, commit versions (`pip freeze`). |
+| T8 | ~~MiniLM-based numbers are unreproduced by a second teammate.~~ **RESOLVED**: `scripts/reproduce.py` regenerates and verifies all reported values, and `tests/test_baselines.py` pins them. Committed environment recorded in docs/RESULTS.md. | M | Done. A teammate should still run it on a second machine to confirm. |
+| T9 | Presentation materials were spread across five docs with no run order or demo script. | L | **Addressed**: `docs/PRESENTATION.md` adds a runbook, demo sequence, cheat sheet, and offline-trap warning. |
 
 ## Methodological
 | # | Issue | Sev | Next step |
@@ -32,3 +33,14 @@ Last updated: 2026-10-12 | Severity: H / M / L | Owner: [TBD]
 | H2 | `data/student_profiles.csv` includes a `full_name` column plus major and year. Confirm all are fictional. | M | Label as synthetic in the file/README; drop the name column or never replace it with real names. |
 | H3 | Recruitment, consent, data storage, and retention for participant studies are **[TBD]**. | H | Draft once H1 is answered. |
 | H4 | Relevance judgments by team members or students may count as human data. **[TBD]** | M | Check with advisor. |
+
+## Fixed during presentation prep
+
+Issues found while getting this branch ready to present. Listed here so the
+reasoning is auditable rather than buried in a commit message.
+
+| # | Issue | Resolution |
+|---|---|---|
+| F1 | `--bm25-weight 1.5` was accepted: it derives `semantic_weight = -0.5`, which sums to 1.0 and so passed a sum-only check. A negative weight encodes a nonsense rule (negatively weighted semantic signal) while still producing a plausible-looking ranking. | Weights are now range-checked to [0, 1] in `Config` and at the CLI boundary, so a bad value is a usage error (exit 2) instead of a traceback. `top_k` and `batch_size` are range-checked too. Covering tests added. |
+| F2 | Presentation docs had no run order, demo script, or offline warning. | Added `docs/PRESENTATION.md`. |
+| F3 | `docs/RESULTS.md` carried a `[TBD: replace with a committed evaluation_summary.csv]` marker, meaning the headline numbers were not reproducible from the repo. | Resolved via `results/` + `scripts/reproduce.py` + pinned baseline tests (see T4/T8). |

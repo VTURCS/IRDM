@@ -135,6 +135,20 @@ class Config:
     batch_size: int = 64
 
     def __post_init__(self) -> None:
+        # Weights must lie in [0, 1] AND sum to 1. Checking only the sum is not
+        # enough: a weight pair like (1.5, -0.5) sums to 1.0 while encoding a
+        # nonsense retrieval rule (negatively weighted semantic signal), which
+        # would silently produce a plausible-looking but meaningless ranking.
+        for label, value in (
+            ("bm25_weight", self.bm25_weight),
+            ("semantic_weight", self.semantic_weight),
+        ):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(
+                    f"{label} must be within [0, 1] (got {value}). "
+                    "Both hybrid weights are fractions of the final score."
+                )
+
         total = self.bm25_weight + self.semantic_weight
         if abs(total - 1.0) > 1e-9:
             raise ValueError(
@@ -146,6 +160,11 @@ class Config:
                 f"Unknown dataset '{self.dataset}'. "
                 f"Available: {', '.join(available_datasets())}"
             )
+
+        if self.top_k < 1:
+            raise ValueError(f"top_k must be >= 1 (got {self.top_k}).")
+        if self.batch_size < 1:
+            raise ValueError(f"batch_size must be >= 1 (got {self.batch_size}).")
 
 
 # =============================================================================
@@ -1172,6 +1191,22 @@ def print_report(
 # =============================================================================
 
 
+def _unit_interval(value: str) -> float:
+    """
+    argparse validator for a hybrid weight.
+
+    Enforcing the [0, 1] range at the CLI boundary turns a bad weight into a
+    clean usage error (exit 2) instead of a traceback from deep inside Config.
+    """
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"'{value}' is not a number") from exc
+    if not 0.0 <= parsed <= 1.0:
+        raise argparse.ArgumentTypeError(f"weight must be within [0, 1] (got {parsed})")
+    return parsed
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="VTURCS Team 1 - IRDM matching prototype")
     parser.add_argument(
@@ -1198,7 +1233,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         help="cut-off k for retrieval and metrics (default: the dataset's suggested k)",
     )
-    parser.add_argument("--bm25-weight", type=float, default=Config.bm25_weight, help="hybrid weight on BM25 (0..1)")
+    parser.add_argument(
+        "--bm25-weight",
+        type=_unit_interval,
+        default=Config.bm25_weight,
+        help="hybrid weight on BM25, within [0, 1] (semantic weight is 1 - this)",
+    )
     parser.add_argument(
         "--offline-embeddings",
         action="store_true",
