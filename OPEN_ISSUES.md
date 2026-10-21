@@ -1,18 +1,18 @@
 # Open Issues Log: Prototype v1
 
-Last updated: 2026-10-16 | Severity: H / M / L | Owner: [TBD]
+Last updated: 2026-10-21 | Severity: H / M / L | Owner: [TBD]
 
 ## Technical
 | # | Issue | Sev | Next step |
 |---|---|---|---|
 | T1 | Corpus is 8 listings (`prototype`) and 5 (`synthetic_v2`), so Top-10 would be nearly the whole corpus. Prototype v1 reports k=5, not the required @10. | H | Expand to >=50 listings (README target), then report @10. Until then, document the deviation. |
 | T2 | Two implementations disagree: RRF hybrid (`main`) vs min-max hybrid (`Sai_Prototype`); P@10/nDCG@10 (`main`) vs @5 + Recall (`Sai_Prototype`). | H | Team decision on one hybrid for the primary condition; keep the other as an ablation. |
-| T3 | ~~No committed tests.~~ **RESOLVED**: `tests/` added - 69 tests covering metric equivalence vs brute force, retrieval properties, dataset validation contracts, pinned baselines, and CLI/export behaviour. | M | Done. Run `pytest -q`. |
-| T4 | ~~Results CSVs are git-ignored, so no results artifact is committed.~~ **RESOLVED**: `results/` is committed (un-ignored) and produced by `scripts/reproduce.py`. | M | Done. |
-| T5 | `--offline-embeddings` replaces MiniLM with a lexical proxy; misreporting risk. | M | Keep backend label in all exports and tables. (Labels verified by test; see docs/PRESENTATION.md sec 6.) |
-| T6 | Two files named `benchmark.py` with different purposes (`main` vs `scripts/benchmark.py`). | L | Rename the timing harness (e.g. `scripts/timing.py`). |
-| T7 | ~~Python guidance conflicts: docs say verified on 3.13, requirements.txt recommends 3.10-3.12.~~ **ADDRESSED**: `requirements-lock.txt` pins the verified Python 3.13 environment and the MiniLM revision is pinned in code. | L | `requirements.txt` still suggests 3.10-3.12 as the safest torch range for unpinned installs. |
-| T8 | ~~MiniLM-based numbers are unreproduced by a second teammate.~~ **RESOLVED**: `scripts/reproduce.py` regenerates and verifies all reported values, and `tests/test_baselines.py` pins them. Committed environment recorded in docs/RESULTS.md. | M | Done. A teammate should still run it on a second machine to confirm. |
+| T3 | ~~No committed tests.~~ **RESOLVED**: `tests/test_irdm.py` covers the published numbers on all four datasets, the weight sweep, nDCG by hand, tie-breaking, CSV validation, the CLI and the web UI. | M | Done. Run `docker compose run --rm irdm pytest`. |
+| T4 | ~~Results CSVs are git-ignored, so no results artifact is committed.~~ **RESOLVED**: `results/` is committed (un-ignored) and produced by `python evaluate.py <dataset> --output-dir results`. | M | Done. |
+| T5 | ~~`--offline-embeddings` replaces MiniLM with a lexical proxy; misreporting risk.~~ **RESOLVED**: the offline proxy was removed. The Docker image ships the pinned model, so no run can silently fall back. | M | Done. |
+| T6 | ~~Two files named `benchmark.py` with different purposes.~~ **RESOLVED**: the timing harness was removed in the simplification. | L | Done. |
+| T7 | ~~Python guidance conflicts across docs.~~ **RESOLVED**: the Docker image pins Python 3.13, and `requirements.txt` pins the verified package versions. | L | Done. |
+| T8 | ~~MiniLM-based numbers are unreproduced by a second teammate.~~ **RESOLVED**: `tests/test_irdm.py` pins every reported value, and the tests pass both in Docker and on Windows. | M | Done. A teammate should still run it on a second machine to confirm. |
 | T9 | Presentation materials were spread across five docs with no run order or demo script. | L | **Addressed**: `docs/PRESENTATION.md` adds a runbook, demo sequence, cheat sheet, and offline-trap warning. |
 
 ## Methodological
@@ -30,7 +30,7 @@ Last updated: 2026-10-16 | Severity: H / M / L | Owner: [TBD]
 | # | Issue | Sev | Next step |
 |---|---|---|---|
 | H1 | Prototype v1 uses fictional, non-participant profiles. IRB status for later phases is **[TBD]**. | H | Confirm with faculty advisor whether IRB review/exemption is needed before any real student profiles are collected. |
-| H2 | `data/student_profiles.csv` includes a `full_name` column plus major and year. Confirm all are fictional. | M | Label as synthetic in the file/README; drop the name column or never replace it with real names. |
+| H2 | ~~`data/student_profiles.csv` includes a `full_name` column plus major and year.~~ **RESOLVED**: the name column was dropped when `synthetic_v2` moved to `data/synthetic_v2/`; profiles carry no names, only ids, query text and metadata. | M | Never add real names. |
 | H3 | Recruitment, consent, data storage, and retention for participant studies are **[TBD]**. | H | Draft once H1 is answered. |
 | H4 | Relevance judgments by team members or students may count as human data. **[TBD]** | M | Check with advisor. |
 
@@ -41,6 +41,6 @@ reasoning is auditable rather than buried in a commit message.
 
 | # | Issue | Resolution |
 |---|---|---|
-| F1 | `--bm25-weight 1.5` was accepted: it derives `semantic_weight = -0.5`, which sums to 1.0 and so passed a sum-only check. A negative weight encodes a nonsense rule (negatively weighted semantic signal) while still producing a plausible-looking ranking. | Weights are now range-checked to [0, 1] in `Config` and at the CLI boundary, so a bad value is a usage error (exit 2) instead of a traceback. `top_k` and `batch_size` are range-checked too. Covering tests added. |
+| F1 | `--bm25-weight 1.5` was accepted: it derives `semantic_weight = -0.5`, which sums to 1.0 and so passed a sum-only check. A negative weight encodes a nonsense rule (negatively weighted semantic signal) while still producing a plausible-looking ranking. | The CLI range-checks the weight to [0, 1] and `--top-k` to >= 1, so a bad value is a usage error (exit 2) instead of a traceback; the web UI falls back to the defaults. Covered by tests. |
 | F2 | Presentation docs had no run order, demo script, or offline warning. | Added `docs/PRESENTATION.md`. |
-| F3 | `docs/RESULTS.md` carried a `[TBD: replace with a committed evaluation_summary.csv]` marker, meaning the headline numbers were not reproducible from the repo. | Resolved via `results/` + `scripts/reproduce.py` + pinned baseline tests (see T4/T8). |
+| F3 | `docs/RESULTS.md` carried a `[TBD: replace with a committed evaluation_summary.csv]` marker, meaning the headline numbers were not reproducible from the repo. | Resolved via `results/` and pinned baseline tests (see T4/T8). |

@@ -50,20 +50,22 @@ noisy_edge             0.9000            0.9000             0.9262
 should lose. The mechanism is not that BM25 is secretly doing semantics — it is that the
 stratum is contaminated at the *corpus* level:
 
-> STU-009's circumlocutions (`home hypervisor`, `spaced copies`) match **no** building block
-> of the `VT-LNX-03` listing, but `.7` — the substring `proxmox` inside `Proxmox` in the
-> listing title — is *unique to that one listing in a 5-document corpus*. BM25's
-> anti-discrimination guard floors its negative IDF at 0, so a discriminant of `.7` is still
-> the single largest cosine contribution to that document. With only 5 listings, one stray
-> substring hit is enough to win.
+> STU-009 was written to describe Linux administration without the listing's vocabulary
+> (`home hypervisor`, `spaced copies`), but it still shares three literal words with
+> `VT-LNX-03`: `containerized`, `maintain` and `services`. With only 5 listings, those
+> words are rare enough to carry high IDF, so BM25 scores `VT-LNX-03` at 3.59 against 2.24
+> for the next listing. A few leaked words are enough to win.
 
 Empirically, *every* method put the target at rank 1 for 4 of 5 semantic profiles; the
 sequence was 1-1-1-1-2 against BM25's 1-1-1-1-1. So this is not evidence that keywords beat
 semantics — it is evidence that **a 5-document corpus cannot support the claim.** Rank-based
-similarity saturates, IDFs are unreliable, and rare-substring effects dominate.
+similarity saturates, IDFs are unreliable, and a few shared words dominate.
 
 **Before this benchmark can test the hypothesis it needs** (a) substantially more listings
 (≥50, ideally with near-duplicate or overlapping-skill pairs), (b) hand-graded labels across
-multiple listings per profile, and (c) resolution of the `semantic_analogy` stratum's own
-keyword leakage (see `data/synthetic_v2_dataset.py`).
+multiple listings per profile, and (c) removal of the literal keyword overlap still present
+in the `semantic_analogy` profiles (`data/synthetic_v2/profiles.csv`).
+
+The derived grades are written out in full in `data/synthetic_v2/relevance.csv`; each
+profile's `target_id` and `match_type` are in `profiles.csv`.
 

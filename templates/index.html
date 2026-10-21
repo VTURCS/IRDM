@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IRDM Matching</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Research opportunity matching</h1>
+    <p class="lede">Describe a student's interests and compare how keyword (BM25), semantic (MiniLM) and hybrid retrieval rank the research listings.</p>
+  </header>
+
+  <form method="get" class="search">
+    <div class="row">
+      <label>Dataset
+        <select name="dataset" onchange="this.form.submit()">
+          {% for d in datasets %}<option{% if d == name %} selected{% endif %}>{{ d }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Top k
+        <input type="number" name="k" min="1" max="{{ n_listings or 5 }}" value="{{ k }}">
+      </label>
+      <label>Keyword weight
+        <input type="number" name="weight" min="0" max="1" step="0.1" value="{{ weight }}">
+      </label>
+    </div>
+    <label>Student interests
+      <textarea name="query" rows="3" placeholder="e.g. I like machine learning and I know some Python">{{ query }}</textarea>
+    </label>
+    <button type="submit">Match</button>
+  </form>
+
+  {% if profiles %}
+  <details class="samples">
+    <summary>Or pick one of the {{ profiles|length }} profiles in {{ name }}</summary>
+    <ul>
+      {% for p in profiles %}
+      <li><a href="{{ url_for('index', dataset=name, query=p.query, k=k, weight=weight) }}"><b>{{ p.id }}</b> {{ p.query|truncate(150) }}</a></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  {% if results %}
+  <section>
+    <h2>Top {{ k }} listings</h2>
+    <p class="note">
+      {% if profile_id %}This query is profile <b>{{ profile_id }}</b> from {{ name }}, so each listing shows its relevance grade.
+      {% else %}Scores use a different scale for each method, so compare the order, not the numbers.{% endif %}
+    </p>
+    <div class="columns">
+      {% for r in results %}
+      <article class="method">
+        <header>
+          <h3>{{ r.method }}</h3>
+          {% if r.ndcg is not none %}<span class="metric">nDCG@{{ k }} {{ '%.3f'|format(r.ndcg) }}</span>{% endif %}
+        </header>
+        <ol>
+          {% for l in r.listings %}
+          <li>
+            <span class="title">{{ l.title }}</span>
+            <span class="meta">{{ l.id }} · score {{ '%.3f'|format(l.score) }}
+              {% if l.grade is not none %}<span class="grade g{{ l.grade }}">{{ grade_names[l.grade] }}</span>{% endif %}</span>
+          </li>
+          {% endfor %}
+        </ol>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if summary %}
+  <section>
+    <h2>How each method scores on {{ name }}</h2>
+    <p class="note">{{ n_listings }} listings and {{ n_profiles }} profiles, k = {{ k }}, keyword weight {{ weight }}.
+      Means over the {{ n_scorable }} profiles that have at least one relevant listing; precision and recall count partial and strong matches.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Method</th><th>nDCG@{{ k }}</th><th>Precision@{{ k }}</th><th>Recall@{{ k }}</th></tr></thead>
+        <tbody>
+        {% for s in summary %}
+          <tr{% if s['mean_ndcg@k'] == best_ndcg %} class="best"{% endif %}>
+            <td>{{ s.method }}</td>
+            <td>{{ '%.4f'|format(s['mean_ndcg@k']) }}</td>
+            <td>{{ '%.4f'|format(s['mean_precision@k']) }}</td>
+            <td>{{ '%.4f'|format(s['mean_recall@k']) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if by_type %}
+    <h3>nDCG@{{ k }} by profile type</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Type</th>{% for m in methods %}<th>{{ m }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in by_type %}
+          <tr><td>{{ row[0] }}</td>{% for v in row[1:] %}<td>{{ '%.4f'|format(v) }}</td>{% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+</main>
+</body>
+</html>

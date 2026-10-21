@@ -1,93 +1,176 @@
-# VTURCS Team 1: IRDM Prototype v1
+# IRDM: Research-Opportunity Matching
 
-**Research question:** How do BM25, semantic (MiniLM), and weighted hybrid retrieval
-compare when matching short student-interest profiles to VT research opportunities?
+VTURCS Team 1 · Prototype v1
 
-## Conditions (identical corpus, identical verbatim queries)
-| Condition | Method |
+Students often describe their research interests in a sentence or two, and vaguely: "I like
+machine learning and I know some Python." IRDM ranks Virginia Tech research listings for each
+student in three ways. It then measures which ranking puts the right listings at the top,
+against relevance grades written in advance.
+
+| Method | How it ranks listings |
 |---|---|
-| Keyword | BM25Okapi over `title + description + skills` (lowercase tokens, stop-words removed) |
-| Semantic | `all-MiniLM-L6-v2` embeddings at pinned revision `1110a24`, cosine similarity |
-| Hybrid | `0.6 * minmax(BM25) + 0.4 * minmax(cosine)`, normalized per query |
+| Keyword (BM25) | Word overlap with each listing's title, description and skills |
+| Semantic (MiniLM) | Similarity of meaning, using `all-MiniLM-L6-v2` sentence embeddings and cosine similarity |
+| Hybrid | `0.6 × keyword + 0.4 × semantic`, each rescaled to 0–1 per query |
 
-Held constant: no metadata filtering, no query expansion, eligibility text excluded
-from the searchable body. Ties break on opportunity ID, so runs are reproducible.
+All data is synthetic. No real student information is used.
 
-## Inputs
-- **Opportunities:** synthetic VT-style listings (`id, title, description`, plus metadata).
-- **Profiles:** short, vague student-interest queries. Fictional, non-participant data.
-- **Relevance labels:** 0 = unsuitable, 1 = partial match, 2 = strong match, for every
-  (profile, listing) pair. The dataset loader rejects incomplete label sets.
-- Datasets (`--dataset NAME`):
-  - `prototype`: 8 listings, 4 hand-graded profiles (default).
-  - `synthetic_v2`: 5 listings, 20 profiles, derived labels (see docs/).
-  - `main_demo`: 12 listings, 5 profiles, the `main` branch demo carried over verbatim.
-  - `heldout`: 30 listings, 24 profiles tagged by type (exact, paraphrase, vague, token,
-    long, nomatch). Written for the cross-branch comparison, with labels fixed before
-    either system was run on it. One rater, illustrative labels.
+## Quick start
 
-### CSV input format (use this for real VT listings)
-Any folder holding these three files runs with `--data-dir PATH`. No Python needed.
-`main_demo` and `heldout` live in `data/csv/` in this format.
+You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), or Docker Engine
+with Compose. From the repository folder, run:
+
+```
+docker compose up --build
+```
+
+Then open **http://localhost:8000**. The first build downloads the dependencies and the model
+and takes a few minutes; later starts take seconds. Stop the app with `Ctrl+C`.
+
+To check that everything works:
+
+```
+docker compose run --rm irdm pytest
+```
+
+Expected output: `19 passed`. The tests include every published number, so a pass also means
+the results reproduce.
+
+**Testing team:** the scenarios to run are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
+
+## Web interface
+
+- **Search:** pick a dataset, type a student's interests and press **Match**. Each method's
+  top-k listings appear side by side.
+- **Try a profile:** pick one of the dataset's profiles from the list instead. Each listing then
+  shows its relevance grade (strong, partial or unsuitable), and each method shows its nDCG for
+  that profile.
+- **Settings:** **Top k** and **Keyword weight** (the hybrid's BM25 share, from 0 to 1) apply to
+  the rankings and to the evaluation table.
+- **How each method scores:** the table at the bottom gives mean nDCG, Precision and Recall over
+  the whole dataset, plus a breakdown by profile type for datasets that tag their profiles.
+
+## Command-line evaluation
+
+```
+docker compose run --rm irdm python evaluate.py heldout
+docker compose run --rm irdm python evaluate.py prototype --sweep
+```
+
+This prints mean scores per method. Depending on the dataset it also prints a breakdown by
+profile type, a negative-control check for distractor profiles, and (with `--sweep`) hybrid
+nDCG across keyword weights from 0.0 to 1.0. It writes three CSVs to `outputs/<dataset>/`:
+
+| File | Contents |
+|---|---|
+| `match_results.csv` | Every ranked list: `profile_id, method, opportunity_id, rank, score, title, description` |
+| `evaluation_per_profile.csv` | Scores per profile and method, plus `n_relevant, n_strong, scorable, target_rank` |
+| `evaluation_summary.csv` | Mean scores per method |
+
+Options:
+- `--top-k N`: ranked-list length and metric cut-off (default 5)
+- `--bm25-weight W`: the hybrid's keyword weight, from 0 to 1 (default 0.6)
+- `--sweep`: also report hybrid nDCG across keyword weights
+- `--output-dir DIR`: where to write the CSVs
+
+## Datasets
+
+| Dataset | Listings × profiles | Notes |
+|---|---|---|
+| `prototype` (default) | 8 × 4 | Short, vague profiles. Every pair graded by hand |
+| `heldout` | 30 × 24 | Profiles tagged `exact`, `paraphrase`, `vague`, `token`, `long` or `nomatch`. Grades fixed before any method was run on it |
+| `main_demo` | 12 × 5 | Small demo set |
+| `synthetic_v2` | 5 × 20 | Longer profiles. Grades derived from each profile's target listing (one relevant listing each), so read with caution |
+
+### Adding your own
+
+To add a dataset, create a folder in `data/` holding three CSV files. `data/main_demo/` is a
+good starting point to copy. The new folder appears in the web interface's dataset list when you
+refresh the page, and `evaluate.py <folder name>` runs on it.
 
 | File | Required columns | Optional columns |
 |---|---|---|
 | `opportunities.csv` | `id, title, description` | `skills` (separated by `;`), `eligibility`, `department` |
-| `profiles.csv` | `id, query` | `major, year, match_type` (enables `--match-type`) |
-| `relevance.csv` | `profile_id, opportunity_id, grade` (0/1/2) | |
+| `profiles.csv` | `id, query` | `major, year`, `match_type` (enables the by-type table), `target_id` |
+| `relevance.csv` | `profile_id, opportunity_id, grade` | |
 
-`relevance.csv` must grade every (profile, listing) pair, zeros included. Bad files stop
-with a one-line error naming the file and line. Results go to `outputs/<folder name>/`.
+Grades are 0 for unsuitable, 1 for a partial match and 2 for a strong match. `relevance.csv` must
+grade **every** (profile, listing) pair, zeros included. Only title, description and skills are
+searched; the other columns are metadata. If a file has a problem, both the web interface and
+the CLI show a one-line message naming the file and line.
 
-## Outputs (written to `outputs/<dataset>/`)
-`match_results.csv` (ranked lists), `evaluation_per_profile.csv`, `evaluation_summary.csv`.
+## Metrics
 
-## Evaluation
-- **nDCG@k** (primary): gain `2^grade - 1`, normalized by the ideal ranking.
-- **Precision@k:** grade >= 1 counts as relevant, divided by the requested k.
-- **Recall@k:** grade >= 1 relevant listings found in top k, over all relevant listings.
-- **k = 5 for Prototype v1**: the requirement is @10, but Top-10 would be nearly the whole
-  corpus (4 profiles x 8 listings), so @5 is reported and @10 is deferred until the corpus
-  is expanded (see OPEN_ISSUES T1). Means cover scorable profiles only.
+- **nDCG@k** (the main metric, from 0 to 1): rewards putting strong matches near the top. 1.0 means the ideal order.
+- **Precision@k:** the share of the top k graded 1 or 2. It always divides by k.
+- **Recall@k:** the share of all listings graded 1 or 2 that made the top k.
 
-## Verify (do this before presenting)
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q          # 93 tests
-.\.venv\Scripts\python.exe scripts\reproduce.py  # checks all reported values
+A profile with no relevant listing, such as a `nomatch` profile, scores 0 under every method. It
+is therefore left out of the means.
+
+## Results
+
+On `prototype` with k = 5:
+
+| Method | nDCG@5 | Precision@5 | Recall@5 |
+|---|---|---|---|
+| Keyword (BM25) | 0.7046 | 0.55 | 0.7417 |
+| Semantic (all-MiniLM-L6-v2) | **0.8846** | **0.65** | **0.8875** |
+| Hybrid (0.6 KW / 0.4 SEM) | 0.8364 | 0.65 | 0.8875 |
+
+The keyword-weight sweep peaks at 0.4 (nDCG 0.9030), so the 0.6 default gives keywords too much
+weight.
+
+Results are deterministic, for four reasons:
+- The model is pinned to a fixed revision and built into the image.
+- Package versions are pinned in `requirements.txt`.
+- Ties are broken by listing id.
+- The tests fail if any published number changes.
+
+Full results and caveats are in [docs/RESULTS.md](docs/RESULTS.md), and the CSVs behind them are
+committed in [results/](results/).
+
+## Without Docker
+
+You need Python 3.13. Then run:
+
 ```
-`scripts/reproduce.py` is also **the command to run when presenting**: it runs `prototype`
-and `synthetic_v2` through all three conditions, prints the results, sweeps the hybrid
-weight, shows live timings, verifies every number against `docs/RESULTS.md`, and writes
-`results/`. `pytest -m "not slow"` skips the tests needing the MiniLM model (88 tests,
-no download).
-
-## Run
-```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt  # exact tested versions, incl. pytest
-.\.venv\Scripts\python.exe research_matching_pipeline.py                        # prototype
-.\.venv\Scripts\python.exe research_matching_pipeline.py --dataset heldout
-.\.venv\Scripts\python.exe research_matching_pipeline.py --data-dir path\to\folder  # your own CSVs
-.\.venv\Scripts\python.exe research_matching_pipeline.py --bm25-weight 0.0        # weight sweep
+.venv\Scripts\activate             # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+python app.py                      # then open http://localhost:8000
+pytest
 ```
-`requirements-lock.txt` is the environment the tests and `docs/RESULTS.md` were verified in
-(**Python 3.13**, Windows, CPU torch 2.14.1). `requirements.txt` + `requirements-dev.txt`
-remain the unpinned alternative. The model is pinned to Hugging Face revision
-`1110a243fdf4706b3f48f1d95db1a4f5529b4d41` (`EMBEDDING_REVISION` in the pipeline), so an
-upstream update cannot change results. The first run downloads MiniLM (~90 MB); later
-runs are offline.
 
-## Test
-Smoke test with no model download (`--offline-embeddings`):
-```powershell
-.\.venv\Scripts\python.exe research_matching_pipeline.py --offline-embeddings --output-dir outputs/smoke
-```
-Expect three CSVs in `outputs/smoke/prototype/`. **Caution:** in this mode the "semantic"
-condition is a hashed bag-of-words proxy, not MiniLM. It scores *below* BM25 (0.6818 vs
-0.7046 nDCG@5), so an offline run is not comparable to the headline numbers. Check the
-method label before quoting any value.
+The first run downloads the model (~90 MB).
 
-## More
-**Presentation: `docs/PRESENTATION.md`** (runbook, demo script, cheat sheet)
-Results: `docs/RESULTS.md` | Limitations: `OPEN_ISSUES.md` | Artifact: `results/`
-Design notes, verification log, performance work: `docs/`
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `Cannot connect to the Docker daemon` | Start Docker Desktop and wait until it reports that it is running. |
+| `port is already allocated` | Something else is using port 8000. In `docker-compose.yml`, change `"8000:8000"` to `"8080:8000"`, then open http://localhost:8080. |
+| My dataset doesn't appear in the list | The folder must sit directly in `data/` and contain `opportunities.csv`. Refresh the page. |
+
+## Project layout
+
+| Path | What it is |
+|---|---|
+| `irdm.py` | Dataset loading, the three retrieval methods and the metrics |
+| `app.py`, `templates/`, `static/` | The web interface |
+| `evaluate.py` | Command-line evaluation |
+| `tests/test_irdm.py` | Tests, including every published number |
+| `data/` | Datasets, one folder each |
+| `results/` | Committed CSVs behind docs/RESULTS.md |
+| `Dockerfile`, `docker-compose.yml` | Container setup |
+
+## Known limitations
+
+- **Small, synthetic data:** 5–30 listings written to resemble VT postings.
+- **k = 5, not 10:** with 8 listings, a top 10 would be the whole corpus.
+- **One rater:** one person wrote the grades, and there is no agreement check yet.
+- **No "no match" answer:** each method always returns k listings. When a query shares no words with any listing, BM25 returns them in id order.
+
+The full list is in [OPEN_ISSUES.md](OPEN_ISSUES.md). The presenter runbook is
+[docs/PRESENTATION.md](docs/PRESENTATION.md), and the method design is in
+[docs/hybrid_design.md](docs/hybrid_design.md).

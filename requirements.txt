@@ -1,11 +1,13 @@
-# VTURCS Team 1 - IRDM prototype dependencies
-#
-# Note: sentence-transformers pulls in PyTorch (~2 GB download). On very new
-# Python versions (3.13+) PyTorch wheels may lag behind; Python 3.10-3.12 is the
-# safest interpreter for this prototype. If torch cannot be installed, the
-# pipeline still runs end-to-end via --offline-embeddings (hashed BoW proxy).
-
-numpy>=1.26
-pandas>=2.1
-rank_bm25>=0.2.2
-sentence-transformers>=2.6
+# Versions the published results were verified with (Python 3.13).
+# transformers, tokenizers and huggingface_hub come with sentence-transformers;
+# they are pinned too because they decide how the model loads and computes.
+flask==3.1.3
+numpy==2.5.3
+pandas==3.0.6
+rank-bm25==0.2.2
+sentence-transformers==6.1.0
+transformers==5.18.0
+tokenizers==0.23.2
+huggingface_hub==1.33.0
+torch==2.14.1
+pytest==9.1.1

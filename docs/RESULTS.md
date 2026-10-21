@@ -9,19 +9,19 @@ Labels: 0-2 rubric. Precision and Recall treat grade >= 1 as relevant.
 | Semantic (MiniLM) | **0.8846** | **0.65** | **0.8875** |
 | Hybrid (0.6 BM25 / 0.4 MiniLM) | 0.8364 | 0.65 | 0.8875 |
 
-**Provenance (resolved).** All three rows are now independently reproduced from a clean
-checkout. The artifact is committed at `results/prototype/evaluation_summary.csv`, generated
-by `scripts/reproduce.py`, which re-runs the pipeline and fails if any value drifts from the
-table above. Reproduce with:
+**Provenance.** Every number on this page is pinned in `tests/test_irdm.py`, so a change that
+moves one fails the tests instead of silently changing a published result. The CSVs are
+committed in `results/` (written by `python evaluate.py <dataset> --output-dir results`).
+Reproduce with:
 
-```powershell
-.\.venv\Scripts\python.exe scripts\reproduce.py
+```
+docker compose run --rm irdm pytest
+docker compose run --rm irdm python evaluate.py prototype --sweep
 ```
 
-Environment for the committed artifact: Python 3.13.14, numpy 2.5.3, pandas 3.0.6,
-sentence-transformers 6.1.0, torch 2.14.1+cpu. The pinned baselines are also enforced by
-`tests/test_baselines.py`, so a regression fails the test suite rather than silently
-changing a published number.
+Environment: Python 3.13, numpy 2.5.3, pandas 3.0.6, sentence-transformers 6.1.0,
+torch 2.14.1+cpu, model `all-MiniLM-L6-v2` at revision `1110a24` (all pinned in
+`requirements.txt`, `irdm.py` and the Docker image). Verified both in Docker and on Windows.
 
 ## Secondary: `synthetic_v2` (5 listings, 20 profiles, derived labels), mean nDCG@5
 | Condition | nDCG@5 |
@@ -37,7 +37,7 @@ in almost every case, which means this corpus cannot distinguish the conditions 
 
 ## Hybrid weight sweep (OPEN_ISSUES M4) - corrects the naive reading
 
-`scripts/sweep.py`, prototype dataset, real MiniLM, k=5. The hybrid condition's mean nDCG@5
+`python evaluate.py prototype --sweep`, real MiniLM, k=5. The hybrid condition's mean nDCG@5
 as `bm25_weight` varies (0.0 = pure semantic, 1.0 = pure BM25):
 
 | bm25_weight | 0.0 | 0.2 | 0.3 | **0.4** | 0.6 (default) | 0.8 | 1.0 |

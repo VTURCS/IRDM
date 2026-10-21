@@ -1,28 +1,25 @@
 # Hybrid design, baselines, and metrics
 
-> Moved from the original README (unchanged text).
-
 ## Pipeline overview
 
+All of this lives in `irdm.py`.
+
 ```
-opportunities (mock, VT-001..VT-008)
+data/<dataset>/*.csv ── load_dataset() ──► listings, profiles, grade matrix
         │
-        └─ build_document()  ──►  identical text blob for every method
-                                   (eligibility excluded — see baselines)
+        └─ document_text()  ──►  title + description + skills, the same text for every method
                                             │
         ┌───────────────────────────────────┼───────────────────────────────────┐
         ▼                                   ▼                                   ▼
-  KeywordSearcher                  SemanticSearcher                  hybrid_scores()
-  BM25Okapi (negative               all-MiniLM-L6-v2                0.6*minmax(BM25)
-  IDFs floored at 0)                + cosine similarity             + 0.4*minmax(cosine)
-        │                                   │                                   │
-        └───────────────────────────────────┼───────────────────────────────────┘
+  BM25Okapi (negative              all-MiniLM-L6-v2                 0.6*minmax(BM25)
+  IDFs floored at 0)               + cosine similarity              + 0.4*minmax(cosine)
+        └───────────────────────── score() ─┼───────────────────────────────────┘
                                             ▼
-                                 rank_scores() → Top-k per profile
+                                 top_k() → Top-k per profile, ties broken by listing id
                                             ▼
                           evaluate() → nDCG@k, Precision@k, Recall@k
                                             ▼
-                     outputs/*.csv  +  console comparison report
+                web UI (app.py)  |  console report + CSVs (evaluate.py)
 ```
 
 
@@ -30,14 +27,14 @@ opportunities (mock, VT-001..VT-008)
 
 All three methods run against **the exact same corpus and the same verbatim queries**:
 
-| Switch | Default | Rationale |
-| --- | --- | --- |
-| `metadata_filtering` | `False` | `eligibility` (major/year) never filters or re-ranks, so no method secretly benefits from eligibility overlap. |
-| `query_expansion` | `False` | No synonyms, no PRF/RM3, no LLM rewriting — raw vague queries only. |
-| `include_eligibility_in_text` | `False` | Eligibility text is not even in the searchable body. |
+| Held constant | Rationale |
+| --- | --- |
+| No metadata filtering | `eligibility` (major/year) never filters or re-ranks, so no method secretly benefits from eligibility overlap. |
+| No query expansion | No synonyms, no PRF/RM3, no LLM rewriting: raw vague queries only. |
+| Eligibility and department not searched | They are not even in the searchable text, so method differences reflect topical matching rather than major/year keyword overlap. |
 
-These are the first three planned ablations for the full study; they live in `Config` so they
-cannot silently drift.
+These are the first three planned ablations for the full study. They are not configurable
+switches today; adding one means changing `document_text()` or `score()` in `irdm.py`.
 
 
 ## How hybrid ranking works
@@ -63,7 +60,7 @@ Documented consequences:
 
 ## Metrics
 
-Labels are graded and defined in `RELEVANCE_LABELS`:
+Labels are graded, one row per (profile, listing) pair in each dataset's `relevance.csv`:
 
 | Grade | Meaning |
 | --- | --- |

@@ -13,9 +13,9 @@ outputs/
 # Hugging Face model cache (if redirected into the repo)
 .cache/
 
-# `results/` is deliberately NOT ignored. It holds the committed artifact
-# produced by `scripts/reproduce.py`, so the reported numbers can be audited
-# without re-running the pipeline.
+# `results/` is deliberately NOT ignored: it holds the committed CSVs behind
+# docs/RESULTS.md (`python evaluate.py <dataset> --output-dir results`), so the
+# reported numbers can be audited without re-running anything.
 
 # OS / editor noise
 .DS_Store
