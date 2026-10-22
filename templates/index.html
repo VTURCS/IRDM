@@ -14,35 +14,11 @@
   </header>
 
   <form method="get" class="search">
-    <div class="row">
-      <label>Dataset
-        <select name="dataset" onchange="this.form.submit()">
-          {% for d in datasets %}<option{% if d == name %} selected{% endif %}>{{ d }}</option>{% endfor %}
-        </select>
-      </label>
-      <label>Top k
-        <input type="number" name="k" min="1" max="{{ n_listings or 5 }}" value="{{ k }}">
-      </label>
-      <label>Keyword weight
-        <input type="number" name="weight" min="0" max="1" step="0.1" value="{{ weight }}">
-      </label>
-    </div>
     <label>Student interests
       <textarea name="query" rows="3" placeholder="e.g. I like machine learning and I know some Python">{{ query }}</textarea>
     </label>
     <button type="submit">Match</button>
   </form>
-
-  {% if profiles %}
-  <details class="samples">
-    <summary>Or pick one of the {{ profiles|length }} profiles in {{ name }}</summary>
-    <ul>
-      {% for p in profiles %}
-      <li><a href="{{ url_for('index', dataset=name, query=p.query, k=k, weight=weight) }}"><b>{{ p.id }}</b> {{ p.query|truncate(150) }}</a></li>
-      {% endfor %}
-    </ul>
-  </details>
-  {% endif %}
 
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 
@@ -73,6 +49,22 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
+
+  {% if profiles or summary %}
+  <details class="evaluation">
+    <summary>Evaluation</summary>
+    <p class="note">Explore sample profiles and benchmark results. These tables evaluate the
+      predefined profiles in the dataset, not your current search.</p>
+  {% if profiles %}
+  <details class="samples">
+    <summary>Or pick one of the {{ profiles|length }} profiles in {{ name }}</summary>
+    <ul>
+      {% for p in profiles %}
+      <li><a href="{{ url_for('index', dataset=name, query=p.query, k=k, weight=weight) }}"><b>{{ p.id }}</b> {{ p.query|truncate(150) }}</a></li>
+      {% endfor %}
+    </ul>
+  </details>
   {% endif %}
 
   {% if summary %}
@@ -109,6 +101,8 @@
     </div>
     {% endif %}
   </section>
+  {% endif %}
+  </details>
   {% endif %}
 </main>
 </body>

@@ -1,16 +1,20 @@
 # Test Scenarios: IRDM Prototype v1
 
+> The web search form now contains only Student interests and Match. For the dataset,
+> top-k and weight experiments described below, use the README command-line evaluation
+> instructions; the former UI controls have been removed.
+
 This document gives five scenarios for the testing team. Each is a realistic situation built on
 synthetic data, with the steps to follow and the output to expect. All five take about 30
 minutes.
 
 **Before you start:**
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
-2. In the repository folder, run `docker compose up --build` and leave it running. The first build takes a few minutes.
-3. Open **http://localhost:8000**.
+Follow the [README quick start](README.md#quick-start), leave the app running and open
+**http://localhost:8000**.
 
-For commands marked *second terminal*, open a new terminal in the repository folder while the
-app keeps running in the first one.
+For commands marked *second terminal*, open a new terminal in the repository folder and
+activate the same virtual environment as described in the quick start. Keep the app running
+in the first terminal.
 
 | # | Scenario | Checks that… | Time |
 |---|---|---|---|
@@ -84,7 +88,7 @@ method was run on them. Each request is tagged with a type:
 **Steps**
 1. Select dataset **heldout**.
 2. Click profile **Q02** ("Machines that walk on legs") and compare the three columns.
-3. *Second terminal:* `docker compose run --rm irdm python evaluate.py heldout`
+3. *Second terminal:* `python evaluate.py heldout`
 
 **Expected**
 - The evaluation table, over 22 scorable profiles (the 2 `nomatch` profiles have no correct answer and are left out):
@@ -186,7 +190,7 @@ mix affects quality.
 **Steps**
 1. Select **prototype**. Set **Keyword weight** to `0`, press **Match** (the query box can stay empty), and read the Hybrid row in the evaluation table.
 2. Repeat with `0.4` and `1`.
-3. *Second terminal:* `docker compose run --rm irdm python evaluate.py prototype --sweep`
+3. *Second terminal:* `python evaluate.py prototype --sweep`
 
 **Expected**
 
@@ -215,7 +219,7 @@ come from it.
 
 **Steps** (*second terminal*)
 ```
-docker compose run --rm irdm pytest -v
+python -m pytest -v
 ```
 
 **Expected:** `19 passed`. The tests cover:
@@ -242,5 +246,5 @@ For the test report, one row per scenario is enough:
 | 4 | | | | |
 | 5 | | | | |
 
-Please also note your OS, your Docker version (`docker --version`) and how long the first build
+Please also note your OS, your Python version (`python --version`) and how long the initial setup
 took. If anything fails, the full terminal output is the most useful thing to include.

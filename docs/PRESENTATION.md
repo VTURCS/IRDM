@@ -1,19 +1,22 @@
 # Presentation Runbook: Prototype v1
 
+> The web search form now contains only Student interests and Match. For the dataset,
+> top-k and weight experiments described below, use the README command-line evaluation
+> instructions; the former UI controls have been removed.
+
 Everything needed to present this branch. Learn the **cheat sheet** (section 3) before you
 stand up.
 
 ## 1. Before you walk in
 
-```
-docker compose up --build              # leave running; web UI at http://localhost:8000
-docker compose run --rm irdm pytest    # second terminal; expect: 19 passed
-```
+Follow the [README quick start](../README.md#quick-start) to install dependencies and start
+the app. In a second terminal, activate the same environment and run `python -m pytest`
+(expect `19 passed`). Use that activated terminal for the optional CLI command below.
 
 A pass means every number below reproduces on the machine you're presenting from. If anything
 fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` instead.
 
-- [ ] The image is already built. The first build downloads ~525 MB, so don't do it on venue Wi-Fi.
+- [ ] Dependencies are installed and the app has launched once to cache the model. Do this before arriving at the venue.
 - [ ] Browser zoomed in for the room. Have a terminal open in the repository folder.
 - [ ] You can state the three caveats in section 3 from memory.
 
@@ -25,7 +28,7 @@ fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` inst
 | (b) | Click profile **P4** ("HCI and design person…") | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
 | (c) | Set **Keyword weight** to 0.4 and press **Match** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
 | (d) | Switch to **heldout**: show the by-type table | BM25 holds up on `exact` (0.95), but collapses on `paraphrase` (0.47) and `vague` (0.20). |
-| (e) | *Optional:* `docker compose run --rm irdm python evaluate.py prototype --sweep` | The full weight curve in the terminal, plus the CSVs in `outputs/`. |
+| (e) | *Optional:* `python evaluate.py prototype --sweep` | The full weight curve in the terminal, plus the CSVs in `outputs/`. |
 
 ## 3. Presenter cheat sheet
 
@@ -91,7 +94,6 @@ immune to the scale mismatch that hurts score blending. That's the ablation to r
 
 | Symptom | Recovery |
 | --- | --- |
-| `Cannot connect to the Docker daemon` | Start Docker Desktop and wait for it to report that it's running. |
-| `port is already allocated` | Change `"8000:8000"` to `"8080:8000"` in `docker-compose.yml`, and open port 8080. |
+| Startup or port error | See [README troubleshooting](../README.md#troubleshooting). |
 | The page shows a red error message | A dataset CSV is malformed; the message names the file and line. Switch to another dataset. |
 | Nothing works | Show `docs/RESULTS.md` and the committed CSVs in `results/`. |

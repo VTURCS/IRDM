@@ -12,11 +12,11 @@ Labels: 0-2 rubric. Precision and Recall treat grade >= 1 as relevant.
 **Provenance.** Every number on this page is pinned in `tests/test_irdm.py`, so a change that
 moves one fails the tests instead of silently changing a published result. The CSVs are
 committed in `results/` (written by `python evaluate.py <dataset> --output-dir results`).
-Reproduce with:
+After following the [README quick start](../README.md#quick-start), reproduce in an activated terminal with:
 
 ```
-docker compose run --rm irdm pytest
-docker compose run --rm irdm python evaluate.py prototype --sweep
+python -m pytest
+python evaluate.py prototype --sweep
 ```
 
 Environment: Python 3.13, numpy 2.5.3, pandas 3.0.6, sentence-transformers 6.1.0,

@@ -17,20 +17,46 @@ All data is synthetic. No real student information is used.
 
 ## Quick start
 
-You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), or Docker Engine
-with Compose. From the repository folder, run:
+You need **Python 3.13** (`python --version` to check). Run the following from the
+repository folder. On macOS/Linux, use `python3.13` for the first command if needed;
+on Windows, you can use `py -3.13`.
 
-```
-docker compose up --build
-```
+1. Create a virtual environment:
 
-Then open **http://localhost:8000**. The first build downloads the dependencies and the model
-and takes a few minutes; later starts take seconds. Stop the app with `Ctrl+C`.
+   ```sh
+   python -m venv .venv
+   ```
 
-To check that everything works:
+2. Activate it in each terminal you use:
 
-```
-docker compose run --rm irdm pytest
+   | Shell | Command |
+   |---|---|
+   | macOS/Linux (bash/zsh) | `source .venv/bin/activate` |
+   | Windows PowerShell | `.\.venv\Scripts\Activate.ps1` |
+   | Windows Command Prompt | `.venv\Scripts\activate.bat` |
+
+3. On Linux/Windows, install CPU-only PyTorch first to avoid downloading GPU libraries
+   (skip this command on macOS; the next command installs its native PyTorch package):
+
+   ```sh
+   python -m pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+   ```
+
+4. Install the remaining dependencies and start the app:
+
+   ```sh
+   python -m pip install -r requirements.txt
+   python app.py
+   ```
+
+Open **http://localhost:8000**. The first launch downloads the model (~90 MB) and caches it
+locally. Stop the app with `Ctrl+C`. For later runs, activate the environment and run
+`python app.py`; you only need to install dependencies once.
+
+To check that everything works, run this in an activated terminal:
+
+```sh
+python -m pytest
 ```
 
 Expected output: `19 passed`. The tests include every published number, so a pass also means
@@ -40,21 +66,24 @@ the results reproduce.
 
 ## Web interface
 
-- **Search:** pick a dataset, type a student's interests and press **Match**. Each method's
-  top-k listings appear side by side.
-- **Try a profile:** pick one of the dataset's profiles from the list instead. Each listing then
+- **Search:** type a student's interests and press **Match**. Each method's top five
+  listings appear side by side. The default dataset is `irdm.DEFAULT_DATASET`.
+- **Try a profile:** expand **Evaluation** and pick one of the dataset's profiles. Each listing then
   shows its relevance grade (strong, partial or unsuitable), and each method shows its nDCG for
   that profile.
-- **Settings:** **Top k** and **Keyword weight** (the hybrid's BM25 share, from 0 to 1) apply to
-  the rankings and to the evaluation table.
-- **How each method scores:** the table at the bottom gives mean nDCG, Precision and Recall over
+- **Defaults:** the search form uses five results and a hybrid keyword weight of 0.6.
+  Use the command-line evaluation options below to experiment with these settings.
+- **How each method scores:** the tables inside **Evaluation** give mean nDCG, Precision and Recall over
   the whole dataset, plus a breakdown by profile type for datasets that tag their profiles.
+  These benchmarks measure predefined profiles, not the current search.
 
 ## Command-line evaluation
 
+Run these in an activated terminal from the repository folder:
+
 ```
-docker compose run --rm irdm python evaluate.py heldout
-docker compose run --rm irdm python evaluate.py prototype --sweep
+python evaluate.py heldout
+python evaluate.py prototype --sweep
 ```
 
 This prints mean scores per method. Depending on the dataset it also prints a breakdown by
@@ -85,8 +114,8 @@ Options:
 ### Adding your own
 
 To add a dataset, create a folder in `data/` holding three CSV files. `data/main_demo/` is a
-good starting point to copy. The new folder appears in the web interface's dataset list when you
-refresh the page, and `evaluate.py <folder name>` runs on it.
+good starting point to copy. Run `python evaluate.py <folder name>` to evaluate it. Set `DEFAULT_DATASET` in `irdm.py`
+and restart the app to use it as the default in the web interface.
 
 | File | Required columns | Optional columns |
 |---|---|---|
@@ -122,7 +151,7 @@ The keyword-weight sweep peaks at 0.4 (nDCG 0.9030), so the 0.6 default gives ke
 weight.
 
 Results are deterministic, for four reasons:
-- The model is pinned to a fixed revision and built into the image.
+- The model is pinned to a fixed revision and cached locally after download.
 - Package versions are pinned in `requirements.txt`.
 - Ties are broken by listing id.
 - The tests fail if any published number changes.
@@ -130,27 +159,13 @@ Results are deterministic, for four reasons:
 Full results and caveats are in [docs/RESULTS.md](docs/RESULTS.md), and the CSVs behind them are
 committed in [results/](results/).
 
-## Without Docker
-
-You need Python 3.13. Then run:
-
-```
-python -m venv .venv
-.venv\Scripts\activate             # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-python app.py                      # then open http://localhost:8000
-pytest
-```
-
-The first run downloads the model (~90 MB).
-
 ## Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| `Cannot connect to the Docker daemon` | Start Docker Desktop and wait until it reports that it is running. |
-| `port is already allocated` | Something else is using port 8000. In `docker-compose.yml`, change `"8000:8000"` to `"8080:8000"`, then open http://localhost:8080. |
-| My dataset doesn't appear in the list | The folder must sit directly in `data/` and contain `opportunities.csv`. Refresh the page. |
+| `Address already in use` | Run `python -m flask --app app run --port 8080`, then open http://localhost:8080. |
+| `ModuleNotFoundError` | Activate `.venv` in this terminal and run `python -m pip install -r requirements.txt`. |
+| The app still uses the old dataset | Set `DEFAULT_DATASET` in `irdm.py` to the new folder name under `data/`, restart the app, and open `/` without old query parameters. |
 
 ## Project layout
 
@@ -162,7 +177,6 @@ The first run downloads the model (~90 MB).
 | `tests/test_irdm.py` | Tests, including every published number |
 | `data/` | Datasets, one folder each |
 | `results/` | Committed CSVs behind docs/RESULTS.md |
-| `Dockerfile`, `docker-compose.yml` | Container setup |
 
 ## Known limitations
 
