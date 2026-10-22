@@ -27,7 +27,7 @@ Column mapping for `opportunities.csv`:
 
 | Column | From the source | Searched? |
 |---|---|---|
-| `id` | `FURF-` plus the source's "ID Number", zero-padded (`FURF-07`). The source has no ID 34. | n/a |
+| `id` | `FURF-` plus the source's "ID Number", zero-padded (`FURF-07`). This is the posting's source project number, not its rank or match score. The source has no ID 34. | n/a |
 | `title`, `description` | Verbatim, as above | Yes |
 | `skills` | Concrete tools or knowledge named under "Experience or skills needed", e.g. `AutoCAD`, `R`, `Python`. Empty when the posting asks only for curiosity or reliability, which most first-year postings do. Normalised, not verbatim (the source's "MATHLAB" is written `MATLAB`). | Yes |
 | `eligibility` | "Restrictions or time constraints", verbatim | No |

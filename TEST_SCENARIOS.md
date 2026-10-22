@@ -262,6 +262,8 @@ python -m pytest -v
 **Situation.** The page's default dataset, `vt_furf`, holds 44 real undergraduate research
 opportunities from Virginia Tech's 2026–27 First Year FURF program, across eight colleges, from
 dairy science to satellite design. 25 fictional first-year students are matched against them.
+The `FURF-##` shown with each result is its project number in the source list; it is not a
+ranking or match score.
 
 **Steps**
 1. Open **http://localhost:8000** with no parameters, expand **Evaluation**, and read

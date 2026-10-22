@@ -14,8 +14,10 @@ against relevance grades written in advance.
 | Hybrid | `0.6 × keyword + 0.4 × semantic`, each rescaled to 0–1 per query |
 
 The default dataset, `vt_furf`, holds 44 real research listings from Virginia Tech's 2026–27
-First Year FURF program. Every student profile is synthetic, and no real student information is
-used.
+First Year FURF program. Each listing keeps its source ID in the form `FURF-##` (for example,
+`FURF-07`); this is the project number from the FURF source list, **not a rank or match score**.
+The `FURF-##` numbers identify projects; they do not affect search or ranking. Every student
+profile is synthetic, and no real student information is used.
 
 ## Quick start
 
@@ -85,7 +87,8 @@ the results reproduce.
 
 After completing the quick start, open **http://localhost:8000/**. Copy a sample below
 into **Student interests**, then click **Match**. Repeat with another sample and compare
-the order and scores in the Keyword, Semantic and Hybrid columns.
+the order and scores in the Keyword, Semantic and Hybrid columns. Each result includes its
+`FURF-##` source project number; those numbers identify postings and do not indicate rank.
 
 ### Sample student interests
 
