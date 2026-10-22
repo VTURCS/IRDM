@@ -14,6 +14,11 @@
   </header>
 
   <form method="get" class="search">
+    {# The dataset, k and weight controls were removed from the form, so carry the current
+       values through a search; otherwise pressing Match would silently revert to the defaults. #}
+    <input type="hidden" name="dataset" value="{{ name }}">
+    <input type="hidden" name="k" value="{{ k }}">
+    <input type="hidden" name="weight" value="{{ weight }}">
     <label>Student interests
       <textarea name="query" rows="3" placeholder="e.g. I like machine learning and I know some Python">{{ query }}</textarea>
     </label>
@@ -51,57 +56,45 @@
   </section>
   {% endif %}
 
-  {% if profiles or summary %}
+  {% if summary %}
   <details class="evaluation">
     <summary>Evaluation</summary>
-    <p class="note">Explore sample profiles and benchmark results. These tables evaluate the
-      predefined profiles in the dataset, not your current search.</p>
-  {% if profiles %}
-  <details class="samples">
-    <summary>Or pick one of the {{ profiles|length }} profiles in {{ name }}</summary>
-    <ul>
-      {% for p in profiles %}
-      <li><a href="{{ url_for('index', dataset=name, query=p.query, k=k, weight=weight) }}"><b>{{ p.id }}</b> {{ p.query|truncate(150) }}</a></li>
-      {% endfor %}
-    </ul>
-  </details>
-  {% endif %}
-
-  {% if summary %}
-  <section>
-    <h2>How each method scores on {{ name }}</h2>
-    <p class="note">{{ n_listings }} listings and {{ n_profiles }} profiles, k = {{ k }}, keyword weight {{ weight }}.
-      Means over the {{ n_scorable }} profiles that have at least one relevant listing; precision and recall count partial and strong matches.</p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Method</th><th>nDCG@{{ k }}</th><th>Precision@{{ k }}</th><th>Recall@{{ k }}</th></tr></thead>
-        <tbody>
-        {% for s in summary %}
-          <tr{% if s['mean_ndcg@k'] == best_ndcg %} class="best"{% endif %}>
-            <td>{{ s.method }}</td>
-            <td>{{ '%.4f'|format(s['mean_ndcg@k']) }}</td>
-            <td>{{ '%.4f'|format(s['mean_precision@k']) }}</td>
-            <td>{{ '%.4f'|format(s['mean_recall@k']) }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% if by_type %}
-    <h3>nDCG@{{ k }} by profile type</h3>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Type</th>{% for m in methods %}<th>{{ m }}</th>{% endfor %}</tr></thead>
-        <tbody>
-        {% for row in by_type %}
-          <tr><td>{{ row[0] }}</td>{% for v in row[1:] %}<td>{{ '%.4f'|format(v) }}</td>{% endfor %}</tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% endif %}
-  </section>
-  {% endif %}
+    <p class="note">How the three methods score across the whole of {{ name }}. These tables
+      measure the dataset's own labelled profiles, not the search above, so they do not change
+      when you search.</p>
+    <section>
+      <h2>How each method scores on {{ name }}</h2>
+      <p class="note">{{ n_listings }} listings and {{ n_profiles }} profiles, k = {{ k }}, keyword weight {{ weight }}.
+        Means over the {{ n_scorable }} profiles that have at least one relevant listing; precision and recall count partial and strong matches.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>nDCG@{{ k }}</th><th>Precision@{{ k }}</th><th>Recall@{{ k }}</th></tr></thead>
+          <tbody>
+          {% for s in summary %}
+            <tr{% if s['mean_ndcg@k'] == best_ndcg %} class="best"{% endif %}>
+              <td>{{ s.method }}</td>
+              <td>{{ '%.4f'|format(s['mean_ndcg@k']) }}</td>
+              <td>{{ '%.4f'|format(s['mean_precision@k']) }}</td>
+              <td>{{ '%.4f'|format(s['mean_recall@k']) }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if by_type %}
+      <h3>nDCG@{{ k }} by profile type</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Type</th>{% for m in methods %}<th>{{ m }}</th>{% endfor %}</tr></thead>
+          <tbody>
+          {% for row in by_type %}
+            <tr><td>{{ row[0] }}</td>{% for v in row[1:] %}<td>{{ '%.4f'|format(v) }}</td>{% endfor %}</tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
   </details>
   {% endif %}
 </main>

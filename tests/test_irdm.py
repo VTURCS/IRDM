@@ -124,6 +124,16 @@ def test_query_shows_each_method_ranking(client):
     assert "nDCG@5" in page and "strong" in page  # graded, because the query is a dataset profile
 
 
+def test_search_form_carries_dataset_k_and_weight(client):
+    """
+    Dataset, k and weight are set through the URL, so the form must resubmit them as
+    hidden fields. Without this, pressing Match silently reverts to the defaults.
+    """
+    page = client.get("/", query_string={"dataset": "heldout", "k": 3, "weight": 0.4}).get_data(as_text=True)
+    for field, value in (("dataset", "heldout"), ("k", "3"), ("weight", "0.4")):
+        assert f'<input type="hidden" name="{field}" value="{value}">' in page
+
+
 def test_bad_parameters_fall_back_to_defaults(client):
     response = client.get("/", query_string={"dataset": "nope", "k": "x", "weight": "7"})
     assert response.status_code == 200

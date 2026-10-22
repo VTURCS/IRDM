@@ -1,9 +1,5 @@
 # Presentation Runbook: Prototype v1
 
-> The web search form now contains only Student interests and Match. For the dataset,
-> top-k and weight experiments described below, use the README command-line evaluation
-> instructions; the former UI controls have been removed.
-
 Everything needed to present this branch. Learn the **cheat sheet** (section 3) before you
 stand up.
 
@@ -11,7 +7,7 @@ stand up.
 
 Follow the [README quick start](../README.md#quick-start) to install dependencies and start
 the app. In a second terminal, activate the same environment and run `python -m pytest`
-(expect `19 passed`). Use that activated terminal for the optional CLI command below.
+(expect `20 passed`). Use that activated terminal for the optional CLI command below.
 
 A pass means every number below reproduces on the machine you're presenting from. If anything
 fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` instead.
@@ -22,13 +18,18 @@ fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` inst
 
 ## 2. Demo sequence (about 4 minutes)
 
+Have the four URLs below open in tabs before you start, so you are never typing live.
+
 | Step | Do this | Point at |
 |---|---|---|
-| (a) | **prototype**: scroll to *How each method scores* | Semantic leads (nDCG 0.885). The **default** hybrid (0.836) is worse than pure semantic. |
-| (b) | Click profile **P4** ("HCI and design person…") | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
-| (c) | Set **Keyword weight** to 0.4 and press **Match** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
-| (d) | Switch to **heldout**: show the by-type table | BM25 holds up on `exact` (0.95), but collapses on `paraphrase` (0.47) and `vague` (0.20). |
+| (a) | `localhost:8000` — expand **Evaluation** | Semantic leads (nDCG 0.885). The **default** hybrid (0.836) is worse than pure semantic. |
+| (b) | Paste profile **P4** and press **Match**: `I am an HCI and design person, I like studying people and technology.` | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
+| (c) | `localhost:8000/?weight=0.4` — expand **Evaluation** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
+| (d) | `localhost:8000/?dataset=heldout` — expand **Evaluation** for the by-type table | BM25 holds up on `exact` (0.95), but collapses on `paraphrase` (0.47) and `vague` (0.20). |
 | (e) | *Optional:* `python evaluate.py prototype --sweep` | The full weight curve in the terminal, plus the CSVs in `outputs/`. |
+
+The search box is the only control on the page. Dataset, k and keyword weight are set
+through the URL, and a search keeps whichever ones are already in it.
 
 ## 3. Presenter cheat sheet
 
@@ -95,5 +96,5 @@ immune to the scale mismatch that hurts score blending. That's the ablation to r
 | Symptom | Recovery |
 | --- | --- |
 | Startup or port error | See [README troubleshooting](../README.md#troubleshooting). |
-| The page shows a red error message | A dataset CSV is malformed; the message names the file and line. Switch to another dataset. |
+| The page shows a red error message | A dataset CSV is malformed; the message names the file and line. Open `localhost:8000/?dataset=prototype` to get back to a working one. |
 | Nothing works | Show `docs/RESULTS.md` and the committed CSVs in `results/`. |

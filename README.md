@@ -59,7 +59,7 @@ To check that everything works, run this in an activated terminal:
 python -m pytest
 ```
 
-Expected output: `19 passed`. The tests include every published number, so a pass also means
+Expected output: `20 passed`. The tests include every published number, so a pass also means
 the results reproduce.
 
 **Testing team:** the scenarios to run are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
@@ -67,15 +67,15 @@ the results reproduce.
 ## Web interface
 
 - **Search:** type a student's interests and press **Match**. Each method's top five
-  listings appear side by side. The default dataset is `irdm.DEFAULT_DATASET`.
-- **Try a profile:** expand **Evaluation** and pick one of the dataset's profiles. Each listing then
-  shows its relevance grade (strong, partial or unsuitable), and each method shows its nDCG for
-  that profile.
+  listings appear side by side. The default dataset is `prototype`.
+- **Try a labelled profile:** paste one of the samples from the [testing guide](#testing-guide)
+  below. When the text matches one of the dataset's own profiles exactly, each listing also
+  shows its relevance grade (strong, partial or unsuitable) and each method shows its nDCG.
 - **Defaults:** the search form uses five results and a hybrid keyword weight of 0.6.
   Use the command-line evaluation options below to experiment with these settings.
 - **How each method scores:** the tables inside **Evaluation** give mean nDCG, Precision and Recall over
   the whole dataset, plus a breakdown by profile type for datasets that tag their profiles.
-  These benchmarks measure predefined profiles, not the current search.
+  These benchmarks measure the dataset's labelled profiles, not the current search.
 
 ## Testing guide
 
@@ -88,6 +88,9 @@ the order and scores in the Keyword, Semantic and Hybrid columns.
 These are the exact profiles from `data/prototype/profiles.csv`. The observations below
 apply to the current synthetic `prototype` dataset with five results and keyword weight
 0.6. Update these examples and expected results when the real dataset replaces it.
+
+Every dataset's profiles live in its own `data/<dataset>/profiles.csv`, so you can copy a
+query from there for any dataset.
 
 **P1 — Computer Science**
 
@@ -136,9 +139,8 @@ The app always returns up to five listings, so appearing in the results does not
 mean a listing is relevant. Similarity scores are not confidence percentages, and scores
 from different methods are not directly comparable.
 
-The collapsed **Evaluation** section contains the sample-profile picker and aggregate
-benchmark tables. Those tables evaluate the predefined profiles, so changing only your
-search text will not change them.
+The collapsed **Evaluation** section holds the aggregate benchmark tables. Those tables
+score the dataset's labelled profiles, so changing your search text will not change them.
 
 For automated checks, run `python -m pytest` in the activated environment. More detailed
 scenarios are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).

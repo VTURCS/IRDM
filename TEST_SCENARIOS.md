@@ -1,9 +1,5 @@
 # Test Scenarios: IRDM Prototype v1
 
-> The web search form now contains only Student interests and Match. For the dataset,
-> top-k and weight experiments described below, use the README command-line evaluation
-> instructions; the former UI controls have been removed.
-
 This document gives five scenarios for the testing team. Each is a realistic situation built on
 synthetic data, with the steps to follow and the output to expect. All five take about 30
 minutes.
@@ -11,6 +7,17 @@ minutes.
 **Before you start:**
 Follow the [README quick start](README.md#quick-start), leave the app running and open
 **http://localhost:8000**.
+
+**How the page works.** The only control is the search box. You choose the dataset, the
+number of results (`k`) and the hybrid keyword weight through the URL instead:
+
+```
+http://localhost:8000/?dataset=heldout&k=5&weight=0.4
+```
+
+A search keeps whichever of those are already in the URL, so you can set them once and then
+search freely. The aggregate tables live in the collapsed **Evaluation** section at the
+bottom of the page.
 
 For commands marked *second terminal*, open a new terminal in the repository folder and
 activate the same virtual environment as described in the quick start. Keep the app running
@@ -32,11 +39,18 @@ in the first terminal.
 email to an advisor. The system has 8 research listings and must rank them for each student.
 
 **Steps**
-1. With dataset **prototype** selected, scroll down to **How each method scores on prototype**.
-2. Open **Or pick one of the 4 profiles in prototype** and click **P1** ("I like machine learning and I know some Python…").
-3. Repeat for **P2** and **P4**.
+1. Expand **Evaluation** at the bottom of the page and read **How each method scores on prototype**.
+2. Paste this into **Student interests** and press **Match** (profile **P1**):
+   `I like machine learning and I know some Python. I want to work on AI stuff.`
+3. Repeat with **P2** and **P4**, copied from the
+   [README testing guide](README.md#sample-student-interests):
+   - P2: `Biology major interested in data and health. I don't code very much.`
+   - P4: `I am an HCI and design person, I like studying people and technology.`
 4. Type your own description (for example, a few words about your own interests) into
    **Student interests** and press **Match**.
+
+Paste each query exactly, including punctuation. An exact match to one of the dataset's
+profiles is what makes the grade badges and the per-query nDCG appear.
 
 **Expected**
 - At step 1, the evaluation table shows:
@@ -86,9 +100,12 @@ method was run on them. Each request is tagged with a type:
 | `nomatch` | "Sculpture and ceramic art" (no listing fits) |
 
 **Steps**
-1. Select dataset **heldout**.
-2. Click profile **Q02** ("Machines that walk on legs") and compare the three columns.
+1. Open **http://localhost:8000/?dataset=heldout** to switch datasets, then expand **Evaluation**.
+2. Paste `Machines that walk on legs` into **Student interests** and press **Match** (profile
+   **Q02**), then compare the three columns.
 3. *Second terminal:* `python evaluate.py heldout`
+
+Pressing **Match** keeps you on `heldout`, because the form submits the dataset with your query.
 
 **Expected**
 - The evaluation table, over 22 scorable profiles (the 2 `nomatch` profiles have no correct answer and are left out):
@@ -131,7 +148,7 @@ make a typo.
 - Windows (PowerShell): `Copy-Item -Recurse data/main_demo data/my_listings`
 - macOS/Linux: `cp -r data/main_demo data/my_listings`
 
-Refresh the page. **my_listings** now appears in the dataset list. Select it, and expect 12
+Open **http://localhost:8000/?dataset=my_listings** and expand **Evaluation**. Expect 12
 listings, 5 profiles and:
 
 | Method | nDCG@5 | Precision@5 | Recall@5 |
@@ -145,9 +162,10 @@ text editor or Excel, add this row at the end, and save:
 ```
 o13,Drone delivery logistics,Plan delivery routes for campus drones using Python and optimization.
 ```
-Refresh the page. Expected: a red message instead of results:
+Refresh the page. Expected: a red message instead of results, naming the file (the path will
+be your own repository folder):
 ```
-/app/data/my_listings/relevance.csv: 5 (profile, opportunity) pairs have no grade, starting with ('p01', 'o13'). Every pair needs a grade, zeros included.
+...\data\my_listings\relevance.csv: 5 (profile, opportunity) pairs have no grade, starting with ('p01', 'o13'). Every pair needs a grade, zeros included.
 ```
 
 **Step 3. Grade it.** Add these rows to the end of `data/my_listings/relevance.csv`. Profile
@@ -166,17 +184,17 @@ Refresh. Expected: 13 listings. nDCG and recall are unchanged, and precision ris
 **Step 4. Make a typo.** In `relevance.csv`, change the row `p01,o01,2` to `p01,o01,3`, then
 refresh. Expected:
 ```
-/app/data/my_listings/relevance.csv:2: grade must be 0, 1 or 2 (row: p01,o01,3)
+...\data\my_listings\relevance.csv:2: grade must be 0, 1 or 2 (row: p01,o01,3)
 ```
 
 **Pass if** two things hold:
 - Steps 1 and 3 show the numbers above.
-- Steps 2 and 4 show a one-line message naming the file, and the page still works: you can switch back to another dataset.
+- Steps 2 and 4 show a one-line message naming the file and the line, and the page still works: you can open another dataset.
 
 Delete `data/my_listings/` when you're done.
 
-**Worth noting.** With **my_listings** or **main_demo** selected, type `Quantum cryptography`
-and press **Match**. No listing contains those words, so every keyword score is 0 and BM25
+**Worth noting.** On **http://localhost:8000/?dataset=main_demo**, search for
+`Quantum cryptography`. No listing contains those words, so every keyword score is 0 and BM25
 returns listings in id order (o01, o02, o03…). The system never answers "no good match"; it
 always returns k listings.
 
@@ -188,8 +206,8 @@ always returns k listings.
 mix affects quality.
 
 **Steps**
-1. Select **prototype**. Set **Keyword weight** to `0`, press **Match** (the query box can stay empty), and read the Hybrid row in the evaluation table.
-2. Repeat with `0.4` and `1`.
+1. Open **http://localhost:8000/?weight=0**, expand **Evaluation**, and read the Hybrid row.
+2. Repeat with `?weight=0.4` and `?weight=1`.
 3. *Second terminal:* `python evaluate.py prototype --sweep`
 
 **Expected**
@@ -222,7 +240,7 @@ come from it.
 python -m pytest -v
 ```
 
-**Expected:** `19 passed`. The tests cover:
+**Expected:** `20 passed`. The tests cover:
 - the published results on all four datasets, and the weight sweep
 - the nDCG calculation, worked by hand
 - ties and the no-overlap case
@@ -230,7 +248,7 @@ python -m pytest -v
 - the CLI
 - the web interface, including a broken dataset folder
 
-**Pass if** all 19 pass. If any fail, please copy the failure summary into your report.
+**Pass if** all 20 pass. If any fail, please copy the failure summary into your report.
 
 ---
 
