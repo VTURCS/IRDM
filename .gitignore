@@ -1,7 +1,28 @@
+# Virtual environment
 .venv/
-venv/
+
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Pipeline outputs (regenerated on every run)
+outputs/
+
+# Hugging Face model cache (if redirected into the repo)
+.cache/
+
+# `results/` is deliberately NOT ignored: it holds the committed CSVs behind
+# docs/RESULTS.md (`python evaluate.py <dataset> --output-dir results`), so the
+# reported numbers can be audited without re-running anything.
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Existing benchmark and local environment files
+venv/
 .env
 .env.*
 !.env.example

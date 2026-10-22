@@ -1,0 +1,13 @@
+profile_id,method,ndcg@k,precision@k,recall@k,n_relevant,n_strong,scorable,target_rank
+P1,Keyword (BM25),0.7702,0.8,0.8,5,3,True,
+P2,Keyword (BM25),0.6729,0.6,1.0,3,1,True,
+P3,Keyword (BM25),0.796,0.4,0.5,4,1,True,
+P4,Keyword (BM25),0.5792,0.4,0.6667,3,1,True,
+P1,Semantic (all-MiniLM-L6-v2),0.8437,0.8,0.8,5,3,True,
+P2,Semantic (all-MiniLM-L6-v2),0.8045,0.6,1.0,3,1,True,
+P3,Semantic (all-MiniLM-L6-v2),0.8904,0.6,0.75,4,1,True,
+P4,Semantic (all-MiniLM-L6-v2),1.0,0.6,1.0,3,1,True,
+P1,Hybrid (0.6 KW / 0.4 SEM),0.7884,0.8,0.8,5,3,True,
+P2,Hybrid (0.6 KW / 0.4 SEM),0.6835,0.6,1.0,3,1,True,
+P3,Hybrid (0.6 KW / 0.4 SEM),0.8904,0.6,0.75,4,1,True,
+P4,Hybrid (0.6 KW / 0.4 SEM),0.9832,0.6,1.0,3,1,True,

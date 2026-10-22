@@ -1,0 +1,61 @@
+profile_id,method,ndcg@k,precision@k,recall@k,n_relevant,n_strong,scorable,target_rank
+STU-001,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-002,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-003,Keyword (BM25),0.0,0.0,0.0,0,0,False,2.0
+STU-004,Keyword (BM25),1.0,0.2,1.0,1,0,True,1.0
+STU-005,Keyword (BM25),0.0,0.0,0.0,0,0,False,3.0
+STU-006,Keyword (BM25),1.0,0.2,1.0,1,0,True,1.0
+STU-007,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-008,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-009,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-010,Keyword (BM25),0.5,0.2,1.0,1,0,True,3.0
+STU-011,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-012,Keyword (BM25),0.0,0.0,0.0,0,0,False,4.0
+STU-013,Keyword (BM25),0.0,0.0,0.0,0,0,False,1.0
+STU-014,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-015,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-016,Keyword (BM25),1.0,0.2,1.0,1,0,True,1.0
+STU-017,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-018,Keyword (BM25),0.0,0.0,0.0,0,0,False,1.0
+STU-019,Keyword (BM25),1.0,0.2,1.0,1,1,True,1.0
+STU-020,Keyword (BM25),1.0,0.2,1.0,1,0,True,1.0
+STU-001,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-002,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-003,Semantic (all-MiniLM-L6-v2),0.0,0.0,0.0,0,0,False,4.0
+STU-004,Semantic (all-MiniLM-L6-v2),0.5,0.2,1.0,1,0,True,3.0
+STU-005,Semantic (all-MiniLM-L6-v2),0.0,0.0,0.0,0,0,False,3.0
+STU-006,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,0,True,1.0
+STU-007,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-008,Semantic (all-MiniLM-L6-v2),0.6309,0.2,1.0,1,1,True,2.0
+STU-009,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-010,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,0,True,1.0
+STU-011,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-012,Semantic (all-MiniLM-L6-v2),0.0,0.0,0.0,0,0,False,1.0
+STU-013,Semantic (all-MiniLM-L6-v2),0.0,0.0,0.0,0,0,False,1.0
+STU-014,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-015,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-016,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,0,True,1.0
+STU-017,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-018,Semantic (all-MiniLM-L6-v2),0.0,0.0,0.0,0,0,False,1.0
+STU-019,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,1,True,1.0
+STU-020,Semantic (all-MiniLM-L6-v2),1.0,0.2,1.0,1,0,True,1.0
+STU-001,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-002,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-003,Hybrid (0.6 KW / 0.4 SEM),0.0,0.0,0.0,0,0,False,2.0
+STU-004,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,0,True,1.0
+STU-005,Hybrid (0.6 KW / 0.4 SEM),0.0,0.0,0.0,0,0,False,3.0
+STU-006,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,0,True,1.0
+STU-007,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-008,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-009,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-010,Hybrid (0.6 KW / 0.4 SEM),0.6309,0.2,1.0,1,0,True,2.0
+STU-011,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-012,Hybrid (0.6 KW / 0.4 SEM),0.0,0.0,0.0,0,0,False,2.0
+STU-013,Hybrid (0.6 KW / 0.4 SEM),0.0,0.0,0.0,0,0,False,1.0
+STU-014,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-015,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-016,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,0,True,1.0
+STU-017,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-018,Hybrid (0.6 KW / 0.4 SEM),0.0,0.0,0.0,0,0,False,1.0
+STU-019,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,1,True,1.0
+STU-020,Hybrid (0.6 KW / 0.4 SEM),1.0,0.2,1.0,1,0,True,1.0

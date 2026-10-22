@@ -1,0 +1,11 @@
+# docker compose up --build              web UI at http://localhost:8000
+# docker compose run --rm irdm pytest    run the tests
+services:
+  irdm:
+    build: .
+    image: irdm
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data        # dataset folders: add your own here and they appear in the UI
+      - ./outputs:/app/outputs  # CSVs written by evaluate.py
