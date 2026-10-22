@@ -124,9 +124,12 @@ def client():
 
 
 def test_home_page_shows_the_evaluation(client):
+    # Computed rather than pinned: the default dataset's grades are still a draft under review.
+    _, _, summary = irdm.evaluate(irdm.load_dataset(irdm.DEFAULT_DATASET))
     page = client.get("/").get_data(as_text=True)
-    assert "How each method scores on prototype" in page
-    assert "0.8846" in page
+    assert f"How each method scores on {irdm.DEFAULT_DATASET}" in page
+    for ndcg in summary["mean_ndcg@k"]:
+        assert f"{ndcg:.4f}" in page
 
 
 def test_query_shows_each_method_ranking(client):
@@ -149,7 +152,7 @@ def test_search_form_carries_dataset_k_and_weight(client):
 def test_bad_parameters_fall_back_to_defaults(client):
     response = client.get("/", query_string={"dataset": "nope", "k": "x", "weight": "7"})
     assert response.status_code == 200
-    assert "How each method scores on prototype" in response.get_data(as_text=True)
+    assert f"How each method scores on {irdm.DEFAULT_DATASET}" in response.get_data(as_text=True)
 
 
 def test_broken_dataset_folder_shows_the_problem(client, tmp_path, monkeypatch):

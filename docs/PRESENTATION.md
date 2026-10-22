@@ -22,14 +22,16 @@ Have the four URLs below open in tabs before you start, so you are never typing 
 
 | Step | Do this | Point at |
 |---|---|---|
-| (a) | `localhost:8000` — expand **Evaluation** | Semantic leads (nDCG 0.885). The **default** hybrid (0.836) is worse than pure semantic. |
-| (b) | Paste profile **P4** and press **Match**: `I am an HCI and design person, I like studying people and technology.` | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
-| (c) | `localhost:8000/?weight=0.4` — expand **Evaluation** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
+| (a) | `localhost:8000/?dataset=prototype` — expand **Evaluation** | Semantic leads (nDCG 0.885). The **default** hybrid (0.836) is worse than pure semantic. |
+| (b) | On tab (a), paste profile **P4** and press **Match**: `I am an HCI and design person, I like studying people and technology.` | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
+| (c) | `localhost:8000/?dataset=prototype&weight=0.4` — expand **Evaluation** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
 | (d) | `localhost:8000/?dataset=heldout` — expand **Evaluation** for the by-type table | BM25 holds up on `exact` (0.95), but collapses on `paraphrase` (0.47) and `vague` (0.20). |
 | (e) | *Optional:* `python evaluate.py prototype --sweep` | The full weight curve in the terminal, plus the CSVs in `outputs/`. |
+| (f) | *Optional:* `localhost:8000` (real VT listings) — paste `Helping pets stay calm when their paws are handled` | On 44 real FURF postings, BM25's top pick is an engineering-workforce project; semantic finds the dog nail-trim study. **Say that these grades are an unreviewed AI draft** before quoting any number. |
 
 The search box is the only control on the page. Dataset, k and keyword weight are set
-through the URL, and a search keeps whichever ones are already in it.
+through the URL, and a search keeps whichever ones are already in it. The plain address opens
+`vt_furf`, the real listings, so steps (a)–(c) name `prototype` explicitly.
 
 ## 3. Presenter cheat sheet
 

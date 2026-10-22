@@ -13,7 +13,9 @@ against relevance grades written in advance.
 | Semantic (MiniLM) | Similarity of meaning, using `all-MiniLM-L6-v2` sentence embeddings and cosine similarity |
 | Hybrid | `0.6 × keyword + 0.4 × semantic`, each rescaled to 0–1 per query |
 
-All data is synthetic. No real student information is used.
+The default dataset, `vt_furf`, holds 44 real research listings from Virginia Tech's 2026–27
+First Year FURF program. Every student profile is synthetic, and no real student information is
+used.
 
 ## Quick start
 
@@ -67,7 +69,9 @@ the results reproduce.
 ## Web interface
 
 - **Search:** type a student's interests and press **Match**. Each method's top five
-  listings appear side by side. The default dataset is `prototype`.
+  listings appear side by side. The page uses `vt_furf` (real VT listings) by default; open
+  http://localhost:8000/?dataset=prototype for the hand-graded synthetic set, or any other
+  folder name in `data/`.
 - **Try a labelled profile:** paste one of the samples from the [testing guide](#testing-guide)
   below. When the text matches one of the dataset's own profiles exactly, each listing also
   shows its relevance grade (strong, partial or unsuitable) and each method shows its nDCG.
@@ -85,55 +89,62 @@ the order and scores in the Keyword, Semantic and Hybrid columns.
 
 ### Sample student interests
 
-These are the exact profiles from `data/prototype/profiles.csv`. The observations below
-apply to the current synthetic `prototype` dataset with five results and keyword weight
-0.6. Update these examples and expected results when the real dataset replaces it.
+These are exact profiles from `data/vt_furf/profiles.csv`, matched against the real VT
+listings. The observations below are for five results and keyword weight 0.6. Every dataset's
+profiles live in its own `data/<dataset>/profiles.csv`, so you can copy queries for any dataset;
+the `prototype` samples are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md) (scenario 1).
 
-Every dataset's profiles live in its own `data/<dataset>/profiles.csv`, so you can copy a
-query from there for any dataset.
-
-**P1 — Computer Science**
+**S03 — Environmental Science** (uses the posting's own words)
 
 ```text
-I like machine learning and I know some Python. I want to work on AI stuff.
+Microplastic pollution in water samples and FTIR analysis
 ```
 
-**P2 — Biology**
+**S08 — Animal and Poultry Sciences** (everyday words for a technical topic)
 
 ```text
-Biology major interested in data and health. I don't code very much.
+Helping pets stay calm when their paws are handled
 ```
 
-**P3 — Mechanical Engineering**
+**S12 — English** (everyday words for a technical topic)
 
 ```text
-I have built robots before, I like hardware and control systems.
+How the way people talk changes from one part of the state to another
 ```
 
-**P4 — Psychology**
+**S22 — Aerospace Engineering** (a long, mixed paragraph)
 
 ```text
-I am an HCI and design person, I like studying people and technology.
+I'm a first-year aerospace engineering student. I've been building and launching model rockets since middle school and I took AP Physics last year. I'd love to work on real hardware that goes to space, or at least on the design process behind it. I can do some basic programming and I want to get better at it.
+```
+
+**S24 — Theatre Arts** (nothing in the dataset fits)
+
+```text
+I want to study classical ballet choreography
 ```
 
 ### What to look for
 
 | Sample | Current behavior |
 |---|---|
-| P1 — AI and Python | Semantic ranks **LLM-Based Tutoring Chatbot for CS1 Courses** first; Keyword and Hybrid rank **Smart Grid Load Forecasting with Time-Series ML** first. |
-| P2 — Biology and health | Semantic currently ranks **Usable Security: Evaluating Password Manager UX** first. This is a useful failure case to inspect, not an example of a strong biology match. |
-| P3 — Robotics | All three methods rank **Human-Robot Interaction for Assistive Robotics** first. |
-| P4 — HCI and design | Semantic and Hybrid rank **Usable Security: Evaluating Password Manager UX** first; Keyword ranks **Thermal Management for Electric Vehicle Battery Packs** first. |
+| S03 — Microplastics | All three methods rank the **Watamu Marine National Park microplastics** study first (strong). When a student uses the posting's own words, every method works. |
+| S08 — Calm pets | Semantic ranks **Nailed it: Exploring Effective Training for Nail Trims Using Scratch Boards** first (strong). Keyword ranks **Engineering workforce development in the era of emerging technologies** first and Hybrid ranks **Optimistic chickens** first, both unsuitable. No word in the request appears in the posting, so keyword search has nothing to match, and the hybrid inherits much of that failure. |
+| S12 — Dialects | Semantic ranks the **Southwest Virginia Language (SWVAL) Project** first (strong). Keyword and Hybrid rank a cognitive-psychology study first (unsuitable). |
+| S22 — Space hardware | The reverse: Keyword and Hybrid rank **VT Cube Satellite: Hack-a-Sat** first (strong), on the words "design", "hardware" and "space". Semantic ranks the engineering-workforce project first (unsuitable). Semantic is not always better. |
+| S24 — Ballet | Every method still returns five listings, all graded unsuitable. The app has no "no good match" answer. |
 
-Pasting a sample exactly enables its predefined relevance labels and per-query nDCG.
-Those labels are human-assigned evaluation data, not predictions from the model.
+Pasting a sample exactly shows its relevance grades and per-query nDCG. For `vt_furf` those
+grades are a **first draft written by an AI assistant**, not yet reviewed by people, so treat
+them as provisional (see [data/vt_furf/README.md](data/vt_furf/README.md)). The `prototype`
+grades were written by a person.
 
 Also try your own queries:
 
-- `I like biology`: Semantic should rank **Genomic Data Pipelines for Precision Agriculture**
-  first. Keyword scores are all zero, so its displayed order is just the listing ID order.
-- `I want to study medieval French poetry.`: the app still returns five listings even though
-  the dataset has no suitable opportunity. This demonstrates the current lack of a relevance cutoff.
+- `I want to work with bees and insects outdoors`: all three methods rank the pollinator
+  conservation project first.
+- `I like biology`: no listing contains the word "biology", so every keyword score is 0 and the
+  Keyword column is just listing-id order. Semantic ranks **Biomechanics of animals** first.
 
 The app always returns up to five listings, so appearing in the results does not by itself
 mean a listing is relevant. Similarity scores are not confidence percentages, and scores
@@ -174,11 +185,11 @@ Options:
 
 | Dataset | Listings × profiles | Notes |
 |---|---|---|
-| `prototype` (default) | 8 × 4 | Short, vague profiles. Every pair graded by hand |
+| `prototype` | 8 × 4 | Short, vague profiles. Every pair graded by hand |
 | `heldout` | 30 × 24 | Profiles tagged `exact`, `paraphrase`, `vague`, `token`, `long` or `nomatch`. Grades fixed before any method was run on it |
 | `main_demo` | 12 × 5 | Small demo set |
 | `synthetic_v2` | 5 × 20 | Longer profiles. Grades derived from each profile's target listing (one relevant listing each), so read with caution |
-| `vt_furf` | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. Grades are an AI-drafted first pass awaiting human review, so results are provisional. See [data/vt_furf/README.md](data/vt_furf/README.md) |
+| `vt_furf` (default) | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. Grades are an AI-drafted first pass awaiting human review, so results are provisional. See [data/vt_furf/README.md](data/vt_furf/README.md) |
 
 To use a dataset other than the default in the web interface, add it to the URL, for example
 http://localhost:8000/?dataset=vt_furf. Searches keep it.
@@ -221,6 +232,11 @@ On `prototype` with k = 5:
 
 The keyword-weight sweep peaks at 0.4 (nDCG 0.9030), so the 0.6 default gives keywords too much
 weight.
+
+These are the published results because `prototype`'s grades were written by a person. The page
+opens on `vt_furf`, whose real listings show the same pattern more sharply (semantic 0.8060 vs
+keyword 0.5059 nDCG@5), but whose grades are still an unreviewed AI draft. Its numbers are in
+[data/vt_furf/README.md](data/vt_furf/README.md) and are not pinned in the tests yet.
 
 Results are deterministic, for four reasons:
 - The model is pinned to a fixed revision and cached locally after download.
