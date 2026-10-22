@@ -139,7 +139,7 @@ I want to study classical ballet choreography
 
 Pasting a sample exactly shows its relevance grades and per-query nDCG. For `vt_furf` those
 grades are a **first draft written by an AI assistant**, not yet reviewed by people, so treat
-them as provisional (see [data/vt_furf/README.md](data/vt_furf/README.md)). The `prototype`
+them as provisional (see the [FURF data provenance](#furf-data-provenance) section below). The `prototype`
 grades were written by a person.
 
 Also try your own queries:
@@ -192,7 +192,7 @@ Options:
 | `heldout` | 30 × 24 | Profiles tagged `exact`, `paraphrase`, `vague`, `token`, `long` or `nomatch`. Grades fixed before any method was run on it |
 | `main_demo` | 12 × 5 | Small demo set |
 | `synthetic_v2` | 5 × 20 | Longer profiles. Grades derived from each profile's target listing (one relevant listing each), so read with caution |
-| `vt_furf` (default) | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. Grades are an AI-drafted first pass awaiting human review, so results are provisional. See [data/vt_furf/README.md](data/vt_furf/README.md) |
+| `vt_furf` (default) | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. Grades are an AI-drafted first pass awaiting human review, so results are provisional. See the [FURF data provenance](#furf-data-provenance) section below |
 
 To use a dataset other than the default in the web interface, add it to the URL, for example
 http://localhost:8000/?dataset=vt_furf. Searches keep it.
@@ -213,6 +213,30 @@ Grades are 0 for unsuitable, 1 for a partial match and 2 for a strong match. `re
 grade **every** (profile, listing) pair, zeros included. Only title, description and skills are
 searched; the other columns are metadata. If a file has a problem, both the web interface and
 the CLI show a one-line message naming the file and line.
+
+## FURF data provenance
+
+The default `vt_furf` dataset contains 44 listings from Virginia Tech's **2026–2027 First
+Year Fralin Undergraduate Research Fellowship (FURF) Projects List**, alongside 25 fictional
+student profiles. No real student data is included.
+
+- `opportunities.csv`: project titles and descriptions are copied from the source list. Skills
+  are normalized from its experience and skills section; eligibility and college are metadata.
+  The source's research goals and mentoring style are not included in the searchable text.
+- `profiles.csv`: 25 synthetic first-year student profiles.
+- `relevance.csv`: 1,100 AI-drafted grades, one per profile/listing pair. The grades are a first
+  draft and need human review; treat evaluation results for this dataset as provisional.
+
+**Listing IDs:** `FURF-##` is the project's ID from the original source list—for example,
+`FURF-07`. It identifies the posting; it is not a rank or match score. The source list has no
+project number 34. IDs do not affect search or ranking.
+
+The draft grades use 0 for unsuitable, 1 for partial and 2 for strong. To review them, compare
+each profile in `profiles.csv` against every listing in `opportunities.csv`, then check all
+corresponding rows in `relevance.csv`. Confirm both that every non-zero grade is justified and
+that no zero should be relevant. Ideally, two reviewers should grade independently and compare.
+After editing the grades, run `python -m pytest` to check that all profile/listing pairs are
+present and valid.
 
 ## Metrics
 
@@ -238,8 +262,7 @@ weight.
 
 These are the published results because `prototype`'s grades were written by a person. The page
 opens on `vt_furf`, whose real listings show the same pattern more sharply (semantic 0.8060 vs
-keyword 0.5059 nDCG@5), but whose grades are still an unreviewed AI draft. Its numbers are in
-[data/vt_furf/README.md](data/vt_furf/README.md) and are not pinned in the tests yet.
+keyword 0.5059 nDCG@5), but whose grades are still an unreviewed AI draft. Its numbers are provisional and are not pinned in the tests yet.
 
 Results are deterministic, for four reasons:
 - The model is pinned to a fixed revision and cached locally after download.
