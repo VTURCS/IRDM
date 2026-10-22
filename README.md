@@ -77,6 +77,72 @@ the results reproduce.
   the whole dataset, plus a breakdown by profile type for datasets that tag their profiles.
   These benchmarks measure predefined profiles, not the current search.
 
+## Testing guide
+
+After completing the quick start, open **http://localhost:8000/**. Copy a sample below
+into **Student interests**, then click **Match**. Repeat with another sample and compare
+the order and scores in the Keyword, Semantic and Hybrid columns.
+
+### Sample student interests
+
+These are the exact profiles from `data/prototype/profiles.csv`. The observations below
+apply to the current synthetic `prototype` dataset with five results and keyword weight
+0.6. Update these examples and expected results when the real dataset replaces it.
+
+**P1 — Computer Science**
+
+```text
+I like machine learning and I know some Python. I want to work on AI stuff.
+```
+
+**P2 — Biology**
+
+```text
+Biology major interested in data and health. I don't code very much.
+```
+
+**P3 — Mechanical Engineering**
+
+```text
+I have built robots before, I like hardware and control systems.
+```
+
+**P4 — Psychology**
+
+```text
+I am an HCI and design person, I like studying people and technology.
+```
+
+### What to look for
+
+| Sample | Current behavior |
+|---|---|
+| P1 — AI and Python | Semantic ranks **LLM-Based Tutoring Chatbot for CS1 Courses** first; Keyword and Hybrid rank **Smart Grid Load Forecasting with Time-Series ML** first. |
+| P2 — Biology and health | Semantic currently ranks **Usable Security: Evaluating Password Manager UX** first. This is a useful failure case to inspect, not an example of a strong biology match. |
+| P3 — Robotics | All three methods rank **Human-Robot Interaction for Assistive Robotics** first. |
+| P4 — HCI and design | Semantic and Hybrid rank **Usable Security: Evaluating Password Manager UX** first; Keyword ranks **Thermal Management for Electric Vehicle Battery Packs** first. |
+
+Pasting a sample exactly enables its predefined relevance labels and per-query nDCG.
+Those labels are human-assigned evaluation data, not predictions from the model.
+
+Also try your own queries:
+
+- `I like biology`: Semantic should rank **Genomic Data Pipelines for Precision Agriculture**
+  first. Keyword scores are all zero, so its displayed order is just the listing ID order.
+- `I want to study medieval French poetry.`: the app still returns five listings even though
+  the dataset has no suitable opportunity. This demonstrates the current lack of a relevance cutoff.
+
+The app always returns up to five listings, so appearing in the results does not by itself
+mean a listing is relevant. Similarity scores are not confidence percentages, and scores
+from different methods are not directly comparable.
+
+The collapsed **Evaluation** section contains the sample-profile picker and aggregate
+benchmark tables. Those tables evaluate the predefined profiles, so changing only your
+search text will not change them.
+
+For automated checks, run `python -m pytest` in the activated environment. More detailed
+scenarios are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
+
 ## Command-line evaluation
 
 Run these in an activated terminal from the repository folder:
