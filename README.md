@@ -21,9 +21,17 @@ profile is synthetic, and no real student information is used.
 
 ## Quick start
 
-You need **Python 3.13** (`python --version` to check). Run the following from the
-repository folder. On macOS/Linux, use `python3.13` for the first command if needed;
-on Windows, you can use `py -3.13`.
+You need **Git** and **Python 3.13** (`git --version` and `python --version` to check).
+Clone the repository and enter its folder:
+
+```sh
+git clone https://github.com/VTURCS/IRDM.git
+cd IRDM
+```
+
+Run the remaining commands from this folder. When creating the virtual environment,
+use `python3.13` on macOS/Linux or `py -3.13` on Windows if `python` does not point to
+Python 3.13.
 
 1. Create a virtual environment:
 
@@ -63,7 +71,7 @@ To check that everything works, run this in an activated terminal:
 python -m pytest
 ```
 
-Expected output: `43 passed, 4 subtests passed`. The tests include every published number, so a pass also means
+Expected output: `39 passed`. The tests include every published number, so a pass also means
 the results reproduce.
 
 **Testing team:** the scenarios to run are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
