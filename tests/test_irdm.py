@@ -42,6 +42,18 @@ def test_reproduces_published_results(name):
         assert tuple(got.loc[method]) == pytest.approx(expected, abs=1e-4), method
 
 
+def test_every_dataset_folder_loads():
+    """
+    Every folder in data/ must load: well-formed CSVs, known ids, every pair graded. This
+    catches a slip while hand-editing relevance.csv (e.g. reviewing vt_furf's draft grades).
+    """
+    names = irdm.list_datasets()
+    assert set(PUBLISHED) <= set(names)
+    for name in names:
+        dataset = irdm.load_dataset(name)  # raises ValueError naming the file and line
+        assert (dataset.grades >= 1).any(), f"{name}: no relevant listing for any profile"
+
+
 def test_reproduces_weight_sweep():
     dataset = irdm.load_dataset("prototype")
     for weight, expected in SWEEP.items():

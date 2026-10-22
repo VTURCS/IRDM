@@ -1,0 +1,26 @@
+id,query,major,year,match_type
+S01,CRISPR gene editing in fungal pathogens,Biochemistry,First-year,exact
+S02,Isolating bacteriophages that infect bacteria,Microbiology,First-year,exact
+S03,Microplastic pollution in water samples and FTIR analysis,Environmental Science,First-year,exact
+S04,Protein expression and purification with chromatography and SDS-PAGE,Biochemistry,First-year,exact
+S05,Evaluating large language models and comparing their outputs,Computer Science,First-year,exact
+S06,CubeSat mission design and satellite systems engineering,Aerospace Engineering,First-year,exact
+S07,How some creatures can glide or leap long distances,General Engineering,First-year,paraphrase
+S08,Helping pets stay calm when their paws are handled,Animal and Poultry Sciences,First-year,paraphrase
+S09,What a pet's nose is most drawn to when it explores,Psychology,First-year,paraphrase
+S10,Why some people find it hard to tell how others are doing emotionally,Psychology,First-year,paraphrase
+S11,How old wooden racing boats were made and who raced them,History,First-year,paraphrase
+S12,How the way people talk changes from one part of the state to another,English,First-year,paraphrase
+S13,Turning leftover stone from road building into something nice for a kitchen,General Engineering,First-year,paraphrase
+S14,I like animals and want to do something hands-on with them,Biological Sciences,First-year,vague
+S15,I'm interested in health and medicine but I don't know where to start,Undecided,First-year,vague
+S16,I love being outside and I care about the environment,Undecided,First-year,vague
+S17,I'm good with computers and want to try some kind of research,Computational Modeling and Data Analytics,First-year,vague
+S18,I like history and old things,History,First-year,vague
+S19,I want to help kids learn better,Human Development,First-year,vague
+S20,TEM imaging,Physics,First-year,token
+S21,R for data analysis,Statistics,First-year,token
+S22,"I'm a first-year aerospace engineering student. I've been building and launching model rockets since middle school and I took AP Physics last year. I'd love to work on real hardware that goes to space, or at least on the design process behind it. I can do some basic programming and I want to get better at it.",Aerospace Engineering,First-year,long
+S23,"I grew up around horses and have wanted to be a veterinarian for as long as I can remember. I'm taking intro biology and chemistry this year. I've shadowed at a small animal clinic and helped with feeding and cleaning, but I've never worked in a lab. I want to understand the science behind keeping animals healthy, and I don't mind doing unglamorous work to learn.",Animal and Poultry Sciences,First-year,long
+S24,I want to study classical ballet choreography,Theatre Arts,First-year,nomatch
+S25,Competitive video game strategy and esports team management,Undecided,First-year,nomatch

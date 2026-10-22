@@ -59,7 +59,7 @@ To check that everything works, run this in an activated terminal:
 python -m pytest
 ```
 
-Expected output: `20 passed`. The tests include every published number, so a pass also means
+Expected output: `21 passed`. The tests include every published number, so a pass also means
 the results reproduce.
 
 **Testing team:** the scenarios to run are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
@@ -178,6 +178,10 @@ Options:
 | `heldout` | 30 × 24 | Profiles tagged `exact`, `paraphrase`, `vague`, `token`, `long` or `nomatch`. Grades fixed before any method was run on it |
 | `main_demo` | 12 × 5 | Small demo set |
 | `synthetic_v2` | 5 × 20 | Longer profiles. Grades derived from each profile's target listing (one relevant listing each), so read with caution |
+| `vt_furf` | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. Grades are an AI-drafted first pass awaiting human review, so results are provisional. See [data/vt_furf/README.md](data/vt_furf/README.md) |
+
+To use a dataset other than the default in the web interface, add it to the URL, for example
+http://localhost:8000/?dataset=vt_furf. Searches keep it.
 
 ### Adding your own
 
@@ -248,7 +252,7 @@ committed in [results/](results/).
 
 ## Known limitations
 
-- **Small, synthetic data:** 5–30 listings written to resemble VT postings.
+- **Mostly small, synthetic data:** four datasets have 5–30 listings written to resemble VT postings. `vt_furf` has 44 real listings, but its grades are an unreviewed AI draft.
 - **k = 5, not 10:** with 8 listings, a top 10 would be the whole corpus.
 - **One rater:** one person wrote the grades, and there is no agreement check yet.
 - **No "no match" answer:** each method always returns k listings. When a query shares no words with any listing, BM25 returns them in id order.

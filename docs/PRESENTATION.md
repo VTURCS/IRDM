@@ -7,7 +7,7 @@ stand up.
 
 Follow the [README quick start](../README.md#quick-start) to install dependencies and start
 the app. In a second terminal, activate the same environment and run `python -m pytest`
-(expect `20 passed`). Use that activated terminal for the optional CLI command below.
+(expect `21 passed`). Use that activated terminal for the optional CLI command below.
 
 A pass means every number below reproduces on the machine you're presenting from. If anything
 fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` instead.

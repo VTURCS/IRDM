@@ -240,15 +240,15 @@ come from it.
 python -m pytest -v
 ```
 
-**Expected:** `20 passed`. The tests cover:
+**Expected:** `21 passed`. The tests cover:
 - the published results on all four datasets, and the weight sweep
 - the nDCG calculation, worked by hand
 - ties and the no-overlap case
-- rejection of five kinds of bad CSV
+- rejection of five kinds of bad CSV, and that every dataset folder in `data/` loads
 - the CLI
 - the web interface, including a broken dataset folder
 
-**Pass if** all 20 pass. If any fail, please copy the failure summary into your report.
+**Pass if** all 21 pass. If any fail, please copy the failure summary into your report.
 
 ---
 
