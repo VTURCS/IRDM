@@ -42,6 +42,18 @@ def test_reproduces_published_results(name):
         assert tuple(got.loc[method]) == pytest.approx(expected, abs=1e-4), method
 
 
+def test_every_dataset_folder_loads():
+    """
+    Every folder in data/ must load: well-formed CSVs, known ids, every pair graded. This
+    catches a slip while hand-editing relevance.csv (e.g. reviewing vt_furf's draft grades).
+    """
+    names = irdm.list_datasets()
+    assert set(PUBLISHED) <= set(names)
+    for name in names:
+        dataset = irdm.load_dataset(name)  # raises ValueError naming the file and line
+        assert (dataset.grades >= 1).any(), f"{name}: no relevant listing for any profile"
+
+
 def test_reproduces_weight_sweep():
     dataset = irdm.load_dataset("prototype")
     for weight, expected in SWEEP.items():
@@ -112,9 +124,12 @@ def client():
 
 
 def test_home_page_shows_the_evaluation(client):
+    # Computed rather than pinned: the default dataset's grades are still a draft under review.
+    _, _, summary = irdm.evaluate(irdm.load_dataset(irdm.DEFAULT_DATASET))
     page = client.get("/").get_data(as_text=True)
-    assert "How each method scores on prototype" in page
-    assert "0.8846" in page
+    assert f"How each method scores on {irdm.DEFAULT_DATASET}" in page
+    for ndcg in summary["mean_ndcg@k"]:
+        assert f"{ndcg:.4f}" in page
 
 
 def test_query_shows_each_method_ranking(client):
@@ -124,10 +139,20 @@ def test_query_shows_each_method_ranking(client):
     assert "nDCG@5" in page and "strong" in page  # graded, because the query is a dataset profile
 
 
+def test_search_form_carries_dataset_k_and_weight(client):
+    """
+    Dataset, k and weight are set through the URL, so the form must resubmit them as
+    hidden fields. Without this, pressing Match silently reverts to the defaults.
+    """
+    page = client.get("/", query_string={"dataset": "heldout", "k": 3, "weight": 0.4}).get_data(as_text=True)
+    for field, value in (("dataset", "heldout"), ("k", "3"), ("weight", "0.4")):
+        assert f'<input type="hidden" name="{field}" value="{value}">' in page
+
+
 def test_bad_parameters_fall_back_to_defaults(client):
     response = client.get("/", query_string={"dataset": "nope", "k": "x", "weight": "7"})
     assert response.status_code == 200
-    assert "How each method scores on prototype" in response.get_data(as_text=True)
+    assert f"How each method scores on {irdm.DEFAULT_DATASET}" in response.get_data(as_text=True)
 
 
 def test_broken_dataset_folder_shows_the_problem(client, tmp_path, monkeypatch):

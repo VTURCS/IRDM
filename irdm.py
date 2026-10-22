@@ -31,7 +31,7 @@ import pandas as pd
 from rank_bm25 import BM25Okapi
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-DEFAULT_DATASET = "prototype"
+DEFAULT_DATASET = "vt_furf"
 MODEL_NAME = "all-MiniLM-L6-v2"
 # Pinned Hugging Face commit, so an upstream model update cannot change results.
 MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"

@@ -26,7 +26,7 @@ def index():
     query = request.args.get("query", "").strip()
     weight = request.args.get("weight", 0.6, type=float)
     weight = weight if 0 <= weight <= 1 else 0.6
-    page = dict(datasets=datasets, name=name, query=query, weight=weight, k=5, grade_names=GRADE_NAMES)
+    page = dict(name=name, query=query, weight=weight, k=5, grade_names=GRADE_NAMES)
 
     try:
         dataset = irdm.load_dataset(name)
@@ -42,7 +42,6 @@ def index():
         k=k,
         n_listings=n_listings,
         n_profiles=n_profiles,
-        profiles=dataset.profiles.to_dict("records"),
         profile_id=profile_id,
         results=results,
         summary=summary.to_dict("records"),

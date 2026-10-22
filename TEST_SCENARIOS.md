@@ -1,16 +1,24 @@
 # Test Scenarios: IRDM Prototype v1
 
-> The web search form now contains only Student interests and Match. For the dataset,
-> top-k and weight experiments described below, use the README command-line evaluation
-> instructions; the former UI controls have been removed.
-
-This document gives five scenarios for the testing team. Each is a realistic situation built on
-synthetic data, with the steps to follow and the output to expect. All five take about 30
-minutes.
+This document gives six scenarios for the testing team. Each is a realistic situation with the
+steps to follow and the output to expect. Scenarios 1–4 use synthetic listings; scenario 6 uses
+44 real Virginia Tech research listings, which is also what the page shows by default. All six
+take about 35 minutes.
 
 **Before you start:**
 Follow the [README quick start](README.md#quick-start), leave the app running and open
 **http://localhost:8000**.
+
+**How the page works.** The only control is the search box. You choose the dataset, the
+number of results (`k`) and the hybrid keyword weight through the URL instead:
+
+```
+http://localhost:8000/?dataset=heldout&k=5&weight=0.4
+```
+
+A search keeps whichever of those are already in the URL, so you can set them once and then
+search freely. The aggregate tables live in the collapsed **Evaluation** section at the
+bottom of the page.
 
 For commands marked *second terminal*, open a new terminal in the repository folder and
 activate the same virtual environment as described in the quick start. Keep the app running
@@ -23,6 +31,7 @@ in the first terminal.
 | 3 | A coordinator adds their own listings | a new dataset folder works, and bad data is reported clearly | 10 min |
 | 4 | Tuning the hybrid | the keyword weight changes the hybrid as expected | 5 min |
 | 5 | Automated checks | the test suite passes and the CLI reproduces the published numbers | 5 min |
+| 6 | Real Virginia Tech listings | the system works on real postings, and where each method succeeds or fails | 5 min |
 
 ---
 
@@ -32,11 +41,19 @@ in the first terminal.
 email to an advisor. The system has 8 research listings and must rank them for each student.
 
 **Steps**
-1. With dataset **prototype** selected, scroll down to **How each method scores on prototype**.
-2. Open **Or pick one of the 4 profiles in prototype** and click **P1** ("I like machine learning and I know some Python…").
-3. Repeat for **P2** and **P4**.
+1. Open **http://localhost:8000/?dataset=prototype**, expand **Evaluation** at the bottom of the
+   page, and read **How each method scores on prototype**. (The plain address opens the real
+   listings used in scenario 6. Searching from this page stays on `prototype`.)
+2. Paste this into **Student interests** and press **Match** (profile **P1**):
+   `I like machine learning and I know some Python. I want to work on AI stuff.`
+3. Repeat with **P2** and **P4**:
+   - P2: `Biology major interested in data and health. I don't code very much.`
+   - P4: `I am an HCI and design person, I like studying people and technology.`
 4. Type your own description (for example, a few words about your own interests) into
    **Student interests** and press **Match**.
+
+Paste each query exactly, including punctuation. An exact match to one of the dataset's
+profiles is what makes the grade badges and the per-query nDCG appear.
 
 **Expected**
 - At step 1, the evaluation table shows:
@@ -86,9 +103,12 @@ method was run on them. Each request is tagged with a type:
 | `nomatch` | "Sculpture and ceramic art" (no listing fits) |
 
 **Steps**
-1. Select dataset **heldout**.
-2. Click profile **Q02** ("Machines that walk on legs") and compare the three columns.
+1. Open **http://localhost:8000/?dataset=heldout** to switch datasets, then expand **Evaluation**.
+2. Paste `Machines that walk on legs` into **Student interests** and press **Match** (profile
+   **Q02**), then compare the three columns.
 3. *Second terminal:* `python evaluate.py heldout`
+
+Pressing **Match** keeps you on `heldout`, because the form submits the dataset with your query.
 
 **Expected**
 - The evaluation table, over 22 scorable profiles (the 2 `nomatch` profiles have no correct answer and are left out):
@@ -131,7 +151,7 @@ make a typo.
 - Windows (PowerShell): `Copy-Item -Recurse data/main_demo data/my_listings`
 - macOS/Linux: `cp -r data/main_demo data/my_listings`
 
-Refresh the page. **my_listings** now appears in the dataset list. Select it, and expect 12
+Open **http://localhost:8000/?dataset=my_listings** and expand **Evaluation**. Expect 12
 listings, 5 profiles and:
 
 | Method | nDCG@5 | Precision@5 | Recall@5 |
@@ -145,9 +165,10 @@ text editor or Excel, add this row at the end, and save:
 ```
 o13,Drone delivery logistics,Plan delivery routes for campus drones using Python and optimization.
 ```
-Refresh the page. Expected: a red message instead of results:
+Refresh the page. Expected: a red message instead of results, naming the file (the path will
+be your own repository folder):
 ```
-/app/data/my_listings/relevance.csv: 5 (profile, opportunity) pairs have no grade, starting with ('p01', 'o13'). Every pair needs a grade, zeros included.
+...\data\my_listings\relevance.csv: 5 (profile, opportunity) pairs have no grade, starting with ('p01', 'o13'). Every pair needs a grade, zeros included.
 ```
 
 **Step 3. Grade it.** Add these rows to the end of `data/my_listings/relevance.csv`. Profile
@@ -166,17 +187,17 @@ Refresh. Expected: 13 listings. nDCG and recall are unchanged, and precision ris
 **Step 4. Make a typo.** In `relevance.csv`, change the row `p01,o01,2` to `p01,o01,3`, then
 refresh. Expected:
 ```
-/app/data/my_listings/relevance.csv:2: grade must be 0, 1 or 2 (row: p01,o01,3)
+...\data\my_listings\relevance.csv:2: grade must be 0, 1 or 2 (row: p01,o01,3)
 ```
 
 **Pass if** two things hold:
 - Steps 1 and 3 show the numbers above.
-- Steps 2 and 4 show a one-line message naming the file, and the page still works: you can switch back to another dataset.
+- Steps 2 and 4 show a one-line message naming the file and the line, and the page still works: you can open another dataset.
 
 Delete `data/my_listings/` when you're done.
 
-**Worth noting.** With **my_listings** or **main_demo** selected, type `Quantum cryptography`
-and press **Match**. No listing contains those words, so every keyword score is 0 and BM25
+**Worth noting.** On **http://localhost:8000/?dataset=main_demo**, search for
+`Quantum cryptography`. No listing contains those words, so every keyword score is 0 and BM25
 returns listings in id order (o01, o02, o03…). The system never answers "no good match"; it
 always returns k listings.
 
@@ -188,8 +209,9 @@ always returns k listings.
 mix affects quality.
 
 **Steps**
-1. Select **prototype**. Set **Keyword weight** to `0`, press **Match** (the query box can stay empty), and read the Hybrid row in the evaluation table.
-2. Repeat with `0.4` and `1`.
+1. Open **http://localhost:8000/?dataset=prototype&weight=0**, expand **Evaluation**, and read the
+   Hybrid row.
+2. Repeat with `weight=0.4` and `weight=1` in place of `weight=0`.
 3. *Second terminal:* `python evaluate.py prototype --sweep`
 
 **Expected**
@@ -222,15 +244,77 @@ come from it.
 python -m pytest -v
 ```
 
-**Expected:** `28 passed, 4 subtests passed`. The tests cover:
+**Expected:** `30 passed, 4 subtests passed`. The tests cover:
 - the published results on all four datasets, and the weight sweep
 - the nDCG calculation, worked by hand
 - ties and the no-overlap case
-- rejection of five kinds of bad CSV
+- rejection of five kinds of bad CSV, and that every dataset folder in `data/` loads
 - the CLI
 - the web interface, including a broken dataset folder
+- the Week 5 standalone benchmark in `benchmark.py` (9 tests; see `WEEK5.md`)
 
-**Pass if** all 28 tests pass. If any fail, please copy the failure summary into your report.
+**Pass if** all 30 tests pass. If any fail, please copy the failure summary into your report.
+
+---
+
+## Scenario 6: Real Virginia Tech listings
+
+**Situation.** The page's default dataset, `vt_furf`, holds 44 real undergraduate research
+opportunities from Virginia Tech's 2026–27 First Year FURF program, across eight colleges, from
+dairy science to satellite design. 25 fictional first-year students are matched against them.
+
+**Steps**
+1. Open **http://localhost:8000** with no parameters, expand **Evaluation**, and read
+   **How each method scores on vt_furf**.
+2. Paste this (profile **S08**) into **Student interests** and press **Match**:
+   `Helping pets stay calm when their paws are handled`
+3. Paste this (profile **S22**) and press **Match**:
+   `I'm a first-year aerospace engineering student. I've been building and launching model rockets since middle school and I took AP Physics last year. I'd love to work on real hardware that goes to space, or at least on the design process behind it. I can do some basic programming and I want to get better at it.`
+4. Search for your own interests, and judge whether the results make sense.
+5. *Second terminal:* `python evaluate.py` with no dataset name.
+
+**Expected**
+- At step 1, 44 listings and 25 profiles, with means over the 23 that have a relevant listing:
+
+  | Method | nDCG@5 | Precision@5 | Recall@5 |
+  |---|---|---|---|
+  | Keyword (BM25) | 0.5059 | 0.3217 | 0.4844 |
+  | **Semantic (all-MiniLM-L6-v2)** | **0.8060** | **0.4870** | **0.7288** |
+  | Hybrid (0.6 KW / 0.4 SEM) | 0.6507 | 0.4087 | 0.6472 |
+
+  and by profile type:
+
+  | Type | Keyword | Semantic | Hybrid |
+  |---|---|---|---|
+  | exact | 0.9206 | 0.9076 | 0.9342 |
+  | long | 0.6242 | 0.3915 | 0.7048 |
+  | paraphrase | 0.1493 | 0.9383 | 0.4865 |
+  | token | 0.8634 | 0.8789 | 0.9010 |
+  | vague | 0.3486 | 0.6640 | 0.4573 |
+
+- At steps 2 and 3:
+
+  | Profile | Method | nDCG@5 | Top listing (grade) |
+  |---|---|---|---|
+  | S08 | Keyword | 0.138 | Engineering workforce development in the era of emerging technologies (unsuitable) |
+  | S08 | Semantic | 1.000 | Nailed it: Exploring Effective Training for Nail Trims Using Scratch Boards (strong) |
+  | S08 | Hybrid | 0.174 | Optimistic chickens: Does cooperative cognitive bias testing improve learning success? (unsuitable) |
+  | S22 | Keyword | 1.000 | VT Cube Satellite: Hack-a-Sat (strong) |
+  | S22 | Semantic | 0.521 | Engineering workforce development in the era of emerging technologies (unsuitable) |
+  | S22 | Hybrid | 1.000 | VT Cube Satellite: Hack-a-Sat (strong) |
+
+- Step 5 prints the step-1 tables and writes three CSVs to `outputs/vt_furf/`.
+
+**Pass if** the numbers match, both profiles show grade badges, and the CLI defaults to
+`vt_furf`.
+
+**Worth noting.** The listings are real, but the grades behind the badges and the scores are a
+**first draft written by an AI assistant** and have not yet been reviewed by people. If a grade
+looks wrong to you, for example a listing marked "unsuitable" that you think fits, please note
+the profile and listing in your report: that feeds directly into the review. The two profiles
+also show that neither method always wins. Semantic finds the nail-trim study when no word is
+shared (S08), while keyword search wins the long aerospace paragraph on "design", "hardware"
+and "space" (S22).
 
 ---
 
@@ -245,6 +329,7 @@ For the test report, one row per scenario is enough:
 | 3 | | | | |
 | 4 | | | | |
 | 5 | | | | |
+| 6 | | | | |
 
 Please also note your OS, your Python version (`python --version`) and how long the initial setup
 took. If anything fails, the full terminal output is the most useful thing to include.
