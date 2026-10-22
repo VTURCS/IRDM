@@ -134,7 +134,7 @@ def test_home_page_shows_the_evaluation(client):
 
 def test_query_shows_each_method_ranking(client):
     p1 = irdm.load_dataset("prototype").profiles["query"].iloc[0]
-    page = client.get("/", query_string={"dataset": "prototype", "query": p1}).get_data(as_text=True)
+    page = client.get("/", query_string={"dataset": "prototype", "query": p1, "view": "compare"}).get_data(as_text=True)
     assert "LLM-Based Tutoring Chatbot for CS1 Courses" in page  # semantic's top pick for P1
     assert "nDCG@5" in page and "strong" in page  # graded, because the query is a dataset profile
 
@@ -161,3 +161,125 @@ def test_broken_dataset_folder_shows_the_problem(client, tmp_path, monkeypatch):
     monkeypatch.setattr(irdm, "DATA_DIR", tmp_path)
     page = client.get("/", query_string={"dataset": "mine"}).get_data(as_text=True)
     assert "contains no data rows" in page
+
+
+def test_search_normalizes_full_corpus_before_truncation(monkeypatch):
+    dataset = irdm.load_dataset("prototype")
+    scores = {
+        KW: np.array([[0, 10, 20, 30, 40, 50, 60, 100]], dtype=float),
+        SEM: np.array([[-1, -.8, -.6, -.4, -.2, 0, .2, 1]], dtype=float),
+        HYB: np.zeros((1, 8)),
+    }
+    monkeypatch.setattr(irdm, "score", lambda *args: scores)
+    _, short = irdm.search(dataset, "custom", k=2)
+    _, full = irdm.search(dataset, "custom", k=8)
+    for result, complete in zip(short, full):
+        assert result["listings"] == complete["listings"][:2]
+    assert [r["normalized_score"] for r in short[0]["listings"]] == [1, .6]
+    assert [r["score"] for r in short[0]["listings"]] == [100, 60]
+    assert [r["normalized_score"] for r in short[1]["listings"]] == [1, .6]
+    assert all(r["normalized_score"] == 0 for r in full[2]["listings"])
+
+
+def test_single_list_deduplicates_filters_and_sorts_normalized_scores(client):
+    from flask import template_rendered
+    captured = []
+
+    def record(sender, template, context, **extra):
+        captured.append(context)
+
+    with template_rendered.connected_to(record, app.app):
+        response = client.get("/", query_string={"dataset": "vt_furf", "query": "I like biology"})
+    assert response.status_code == 200
+    context = captured[0]
+    merged = context["combined_results"]
+    assert context["view"] == "one"
+    candidates = [l for r in context["results"] for l in r["listings"]]
+    expected_ids = {l["id"] for l in candidates if l["normalized_score"] >= 0.5 and l["semantic_score"] >= 0.3}
+    assert {l["id"] for l in merged} == expected_ids
+    assert len(merged) == len(expected_ids)
+    for l in merged:
+        assert l["normalized_score"] == max(c["normalized_score"] for c in candidates if c["id"] == l["id"])
+    scores = [l["normalized_score"] for l in merged]
+    assert scores == sorted(scores, reverse=True)
+    assert all(0 <= score <= 1 for score in scores)
+    page = response.get_data(as_text=True)
+    assert page.count('class="score-method"') == len(merged)
+    assert page.count('class="combined-list"') == 1
+    assert 'class="method"' not in page
+
+
+def test_comparison_view_preserves_raw_scores(client):
+    query = "I like biology"
+    dataset = irdm.load_dataset("prototype")
+    _, expected = irdm.search(dataset, query)
+    page = client.get("/", query_string={"dataset": "prototype", "query": query, "view": "compare"}).get_data(as_text=True)
+    assert page.count('class="method"') == 3
+    assert 'class="combined-list"' not in page
+    actual = [float(n) for n in re.findall(r'class="result-score">Score ([\d.-]+)', page)]
+    assert actual == [round(l["score"], 3) for r in expected for l in r["listings"]]
+
+
+def test_unknown_view_uses_single_list(client):
+    page = client.get("/", query_string={"query": "biology", "view": "invalid"}).get_data(as_text=True)
+    assert 'class="combined-list"' in page
+
+
+def test_combined_threshold_best_method_ties_and_boundaries():
+    def row(id, value):
+        return {"id": id, "normalized_score": value, "semantic_score": .8, "score": value, "title": id, "grade": None}
+    results = [
+        {"method": KW, "listings": [row("a", .3), row("b", .5), row("c", 0)]},
+        {"method": SEM, "listings": [row("a", .9), row("b", .5)]},
+        {"method": HYB, "listings": [row("a", .8), row("d", 1)]},
+    ]
+    combined = app.combine_results(results)
+    assert [r["id"] for r in combined] == ["d", "a", "b"]
+    assert combined[1]["method"] == SEM
+    assert set(combined[2]["methods"]) == {KW, SEM}
+    assert [r["id"] for r in app.combine_results(results)] == ["d", "a", "b"]
+    assert len(app.combine_results(results)) == 3
+    assert app.combine_results([]) == []
+    assert app.combine_results([{"method": KW, "listings": [row("a", .4999)]}]) == []
+
+
+def test_cutoffs_are_fixed_and_not_user_controls(client):
+    page = client.get("/", query_string={"query": "biology", "min_score": "0", "min_similarity": "0"}).get_data(as_text=True)
+    assert "Minimum score" not in page
+    assert "Minimum similarity" not in page
+    assert 'name="min_score"' not in page
+    assert 'name="min_similarity"' not in page
+    assert "fixed score and semantic similarity cutoffs" in page
+
+
+def test_combined_empty_state(client, monkeypatch):
+    results = [{"method": KW, "listings": [
+        {"id": "a", "normalized_score": .2, "semantic_score": .2, "score": .2, "title": "Example", "grade": None}
+    ]}]
+    monkeypatch.setattr(irdm, "search", lambda *args: (None, results))
+    page = client.get("/", query_string={"query": "unrelated"}).get_data(as_text=True)
+    assert 'No projects meet the matching cutoffs' in page
+    assert 'class="combined-list"' not in page
+
+
+def test_similarity_gate_rejects_high_rescaled_scores_from_every_method():
+    def candidate(id, normalized, semantic):
+        return {"id": id, "normalized_score": normalized, "semantic_score": semantic}
+    results = [
+        {"method": KW, "listings": [candidate("weak", 1, .2), candidate("pass", .8, .3)]},
+        {"method": SEM, "listings": [candidate("weak", 1, .2)]},
+        {"method": HYB, "listings": [candidate("weak", 1, .2)]},
+    ]
+    assert [r["id"] for r in app.combine_results(results)] == ["pass"]
+    assert len(app.combine_results(results)) == 1
+    results[0]["listings"][1]["semantic_score"] = .29
+    assert app.combine_results(results) == []
+
+
+def test_similarity_field_is_raw_semantic_score_for_every_method():
+    dataset = irdm.load_dataset("prototype")
+    _, results = irdm.search(dataset, "I like biology", k=8)
+    semantic = {l["id"]: l["score"] for r in results if r["method"] == SEM for l in r["listings"]}
+    for result in results:
+        for listing in result["listings"]:
+            assert listing["semantic_score"] == semantic[listing["id"]]

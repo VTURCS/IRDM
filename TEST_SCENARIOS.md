@@ -1,5 +1,8 @@
 # Test Scenarios: IRDM Prototype v1
 
+The page opens with one deduplicated list from all three methods, filtered by fixed score (0.5) and similarity (0.30) cutoffs.
+Turn on **Compare methods** for the separate rankings and per-method nDCG used below.
+
 This document gives six scenarios for the testing team. Each is a realistic situation with the
 steps to follow and the output to expect. Scenarios 1–4 use synthetic listings; scenario 6 uses
 44 real Virginia Tech research listings, which is also what the page shows by default. All six
@@ -44,13 +47,13 @@ email to an advisor. The system has 8 research listings and must rank them for e
 1. Open **http://localhost:8000/?dataset=prototype**, expand **Evaluation** at the bottom of the
    page, and read **How each method scores on prototype**. (The plain address opens the real
    listings used in scenario 6. Searching from this page stays on `prototype`.)
-2. Paste this into **Student interests** and press **Match** (profile **P1**):
+2. Paste this into **Student interests** and press **Search** (profile **P1**):
    `I like machine learning and I know some Python. I want to work on AI stuff.`
 3. Repeat with **P2** and **P4**:
    - P2: `Biology major interested in data and health. I don't code very much.`
    - P4: `I am an HCI and design person, I like studying people and technology.`
 4. Type your own description (for example, a few words about your own interests) into
-   **Student interests** and press **Match**.
+   **Student interests** and press **Search**.
 
 Paste each query exactly, including punctuation. An exact match to one of the dataset's
 profiles is what makes the grade badges and the per-query nDCG appear.
@@ -104,11 +107,11 @@ method was run on them. Each request is tagged with a type:
 
 **Steps**
 1. Open **http://localhost:8000/?dataset=heldout** to switch datasets, then expand **Evaluation**.
-2. Paste `Machines that walk on legs` into **Student interests** and press **Match** (profile
+2. Paste `Machines that walk on legs` into **Student interests** and press **Search** (profile
    **Q02**), then compare the three columns.
 3. *Second terminal:* `python evaluate.py heldout`
 
-Pressing **Match** keeps you on `heldout`, because the form submits the dataset with your query.
+Pressing **Search** keeps you on `heldout`, because the form submits the dataset with your query.
 
 **Expected**
 - The evaluation table, over 22 scorable profiles (the 2 `nomatch` profiles have no correct answer and are left out):
@@ -244,7 +247,7 @@ come from it.
 python -m pytest -v
 ```
 
-**Expected:** `30 passed, 4 subtests passed`. The tests cover:
+**Expected:** `43 passed, 4 subtests passed`. The tests cover:
 - the published results on all four datasets, and the weight sweep
 - the nDCG calculation, worked by hand
 - ties and the no-overlap case
@@ -253,7 +256,7 @@ python -m pytest -v
 - the web interface, including a broken dataset folder
 - the Week 5 standalone benchmark in `benchmark.py` (9 tests; see `WEEK5.md`)
 
-**Pass if** all 30 tests pass. If any fail, please copy the failure summary into your report.
+**Pass if** all 43 tests pass. If any fail, please copy the failure summary into your report.
 
 ---
 
@@ -268,9 +271,9 @@ ranking or match score.
 **Steps**
 1. Open **http://localhost:8000** with no parameters, expand **Evaluation**, and read
    **How each method scores on vt_furf**.
-2. Paste this (profile **S08**) into **Student interests** and press **Match**:
+2. Paste this (profile **S08**) into **Student interests** and press **Search**:
    `Helping pets stay calm when their paws are handled`
-3. Paste this (profile **S22**) and press **Match**:
+3. Paste this (profile **S22**) and press **Search**:
    `I'm a first-year aerospace engineering student. I've been building and launching model rockets since middle school and I took AP Physics last year. I'd love to work on real hardware that goes to space, or at least on the design process behind it. I can do some basic programming and I want to get better at it.`
 4. Search for your own interests, and judge whether the results make sense.
 5. *Second terminal:* `python evaluate.py` with no dataset name.

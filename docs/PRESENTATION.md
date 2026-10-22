@@ -1,5 +1,8 @@
 # Presentation Runbook: Prototype v1
 
+The page opens with one deduplicated list from all three methods, filtered by fixed score (0.5) and similarity (0.30) cutoffs.
+Turn on **Compare methods** for the separate rankings and per-method nDCG used below.
+
 Everything needed to present this branch. Learn the **cheat sheet** (section 3) before you
 stand up.
 
@@ -7,7 +10,7 @@ stand up.
 
 Follow the [README quick start](../README.md#quick-start) to install dependencies and start
 the app. In a second terminal, activate the same environment and run `python -m pytest`
-(expect `30 passed, 4 subtests passed`). Use that activated terminal for the optional CLI command below.
+(expect `43 passed, 4 subtests passed`). Use that activated terminal for the optional CLI command below.
 
 A pass means every number below reproduces on the machine you're presenting from. If anything
 fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` instead.
@@ -23,7 +26,7 @@ Have the four URLs below open in tabs before you start, so you are never typing 
 | Step | Do this | Point at |
 |---|---|---|
 | (a) | `localhost:8000/?dataset=prototype` — expand **Evaluation** | Semantic leads (nDCG 0.885). The **default** hybrid (0.836) is worse than pure semantic. |
-| (b) | On tab (a), paste profile **P4** and press **Match**: `I am an HCI and design person, I like studying people and technology.` | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
+| (b) | On tab (a), paste profile **P4** and press **Search**: `I am an HCI and design person, I like studying people and technology.` | BM25's top pick is a battery-cooling listing graded *unsuitable*; semantic finds the usable-security study. That's vocabulary mismatch, live. |
 | (c) | `localhost:8000/?dataset=prototype&weight=0.4` — expand **Evaluation** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
 | (d) | `localhost:8000/?dataset=heldout` — expand **Evaluation** for the by-type table | BM25 holds up on `exact` (0.95), but collapses on `paraphrase` (0.47) and `vague` (0.20). |
 | (e) | *Optional:* `python evaluate.py prototype --sweep` | The full weight curve in the terminal, plus the CSVs in `outputs/`. |

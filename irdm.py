@@ -291,7 +291,11 @@ def search(dataset: Dataset, query: str, k: int = 5, bm25_weight: float = 0.6):
     match = np.flatnonzero(dataset.profiles["query"].to_numpy() == query)[:1]
     grades = dataset.grades[match]  # 1 x listings for a known profile, else 0 x listings
     results = []
-    for method, scores in score(dataset, [query], bm25_weight).items():
+    method_scores = score(dataset, [query], bm25_weight)
+    for method, scores in method_scores.items():
+        # Normalize against the entire corpus, before taking the top k. This keeps
+        # display scores stable when k changes and gives constant scores zero.
+        normalized = _minmax(scores)[0]
         top = top_k(scores, ids, min(k, len(ids)))[0]
         results.append({
             "method": method,
@@ -301,6 +305,8 @@ def search(dataset: Dataset, query: str, k: int = 5, bm25_weight: float = 0.6):
                     "id": str(ids[j]),
                     "title": listings["title"].iat[j],
                     "score": float(scores[0, j]),
+                    "normalized_score": float(normalized[j]),
+                    "semantic_score": float(method_scores[SEMANTIC][0, j]),
                     "grade": int(grades[0, j]) if len(match) else None,
                 }
                 for j in top

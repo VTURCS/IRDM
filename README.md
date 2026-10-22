@@ -16,7 +16,7 @@ against relevance grades written in advance.
 The default dataset, `vt_furf`, holds 44 real research listings from Virginia Tech's 2026–27
 First Year FURF program. Each listing keeps its source ID in the form `FURF-##` (for example,
 `FURF-07`); this is the project number from the FURF source list, **not a rank or match score**.
-The `FURF-##` numbers identify projects; they do not affect search or ranking. Every student
+The `FURF-##` numbers identify projects; IDs break ties when scores are equal. Every student
 profile is synthetic, and no real student information is used.
 
 ## Quick start
@@ -63,31 +63,48 @@ To check that everything works, run this in an activated terminal:
 python -m pytest
 ```
 
-Expected output: `30 passed, 4 subtests passed`. The tests include every published number, so a pass also means
+Expected output: `43 passed, 4 subtests passed`. The tests include every published number, so a pass also means
 the results reproduce.
 
 **Testing team:** the scenarios to run are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
 
 ## Web interface
 
-- **Search:** type a student's interests and press **Match**. Each method's top five
-  listings appear side by side. The page uses `vt_furf` (real VT listings) by default; open
+- **Search:** type a student's interests and press **Search**. By default, one list combines the top five
+  results from each method, deduplicated by project and sorted by its highest rescaled score.
+  Fixed score and similarity cutoffs filter weak matches in the combined list. Turn on **Compare methods**
+  to see the three original rankings side by side. The page uses `vt_furf` (real VT listings) by default; open
   http://localhost:8000/?dataset=prototype for the hand-graded synthetic set, or any other
   folder name in `data/`.
 - **Try a labelled profile:** paste one of the samples from the [testing guide](#testing-guide)
   below. When the text matches one of the dataset's own profiles exactly, each listing also
-  shows its relevance grade (strong, partial or unsuitable) and each method shows its nDCG.
+  shows its relevance grade (strong, partial or unsuitable) and comparison mode shows each method’s nDCG.
 - **Defaults:** the search form uses five results and a hybrid keyword weight of 0.6.
   Use the command-line evaluation options below to experiment with these settings.
 - **How each method scores:** the tables inside **Evaluation** give mean nDCG, Precision and Recall over
   the whole dataset, plus a breakdown by profile type for datasets that tag their profiles.
   These benchmarks measure the dataset's labelled profiles, not the current search.
 
+In the single list, each entry shows its method beside its score. Scores are rescaled per
+method and query using `(score - minimum) / (maximum - minimum)` across all listings, before
+taking the top five. A method with equal scores for every listing gets zeros. These values
+show relative position within a method; they are not calibrated probabilities or evidence
+that the best result is relevant. Each project appears once using its highest score; the label names the method that supplied it
+(or all tied methods). A project must meet the fixed minimum score of 0.5 and minimum semantic
+similarity of 0.30. Equal-scoring projects are ordered by listing ID. Comparison mode keeps the original scores
+and all three lists; it does not apply the combined-list cutoffs. Because each method’s best nonconstant score rescales
+to 1, the combined list also checks the original
+semantic cosine similarity for that project, before rescaling. Every candidate, including
+Keyword and Hybrid results, must pass both cutoffs. Similarity is shown beside each result.
+The 0.30 cutoff is a heuristic, not a validated relevance boundary. It can remove
+useful keyword matches where the semantic model performs poorly; use comparison mode to
+inspect candidates. The cutoffs do not change benchmark evaluation.
+
 ## Testing guide
 
 After completing the quick start, open **http://localhost:8000/**. Copy a sample below
-into **Student interests**, then click **Match**. Repeat with another sample and compare
-the order and scores in the Keyword, Semantic and Hybrid columns. Each result includes its
+into **Student interests**, then click **Search**. Repeat with another sample and compare
+the results. Enable **Compare methods** to follow the column-by-column examples below. Each result includes its
 `FURF-##` source project number; those numbers identify postings and do not indicate rank.
 
 ### Sample student interests
@@ -137,7 +154,7 @@ I want to study classical ballet choreography
 | S22 — Space hardware | The reverse: Keyword and Hybrid rank **VT Cube Satellite: Hack-a-Sat** first (strong), on the words "design", "hardware" and "space". Semantic ranks the engineering-workforce project first (unsuitable). Semantic is not always better. |
 | S24 — Ballet | Every method still returns five listings, all graded unsuitable. The app has no "no good match" answer. |
 
-Pasting a sample exactly shows its relevance grades and per-query nDCG. For `vt_furf` those
+Pasting a sample exactly shows its relevance grades; comparison mode also shows per-query nDCG. For `vt_furf` those
 grades are a **first draft written by an AI assistant**, not yet reviewed by people, so treat
 them as provisional (see the [FURF data provenance](#furf-data-provenance) section below). The `prototype`
 grades were written by a person.
@@ -229,7 +246,7 @@ student profiles. No real student data is included.
 
 **Listing IDs:** `FURF-##` is the project's ID from the original source list—for example,
 `FURF-07`. It identifies the posting; it is not a rank or match score. The source list has no
-project number 34. IDs do not affect search or ranking.
+project number 34. IDs break ties when scores are equal.
 
 The draft grades use 0 for unsuitable, 1 for partial and 2 for strong. To review them, compare
 each profile in `profiles.csv` against every listing in `opportunities.csv`, then check all

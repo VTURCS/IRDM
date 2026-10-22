@@ -7,33 +7,63 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<main>
+<main class="{{ 'has-results' if query else 'search-home' }}{{ ' single-view' if view == 'one' else '' }}">
   <header>
-    <h1>Research opportunity matching</h1>
-    <p class="lede">Describe a student's interests and compare how keyword (BM25), semantic (MiniLM) and hybrid retrieval rank the research listings.</p>
+    <h1>Find research opportunities</h1>
+    <p class="lede">Search projects by a student’s interests.</p>
   </header>
 
-  <form method="get" class="search">
+  <form id="search-form" method="get" class="search" role="search">
     {# The dataset, k and weight controls were removed from the form, so carry the current
-       values through a search; otherwise pressing Match would silently revert to the defaults. #}
+       values through a search; otherwise pressing Search would silently revert to the defaults. #}
     <input type="hidden" name="dataset" value="{{ name }}">
     <input type="hidden" name="k" value="{{ k }}">
     <input type="hidden" name="weight" value="{{ weight }}">
-    <label>Student interests
-      <textarea name="query" rows="3" placeholder="e.g. I like machine learning and I know some Python">{{ query }}</textarea>
-    </label>
-    <button type="submit">Match</button>
+    <label class="sr-only" for="query">Student interests</label>
+    <textarea id="query" name="query" rows="2" placeholder="Describe your interests">{{ query }}</textarea>
+    <button type="submit">Search</button>
   </form>
+
+  <div class="view-toggle">
+    <label class="compare-switch">
+      <span>Compare methods</span>
+      <input type="checkbox" role="switch" form="search-form" name="view" value="compare"{% if view == 'compare' %} checked{% endif %} onchange="this.form.requestSubmit()" aria-label="Compare methods">
+      <span class="switch-track" aria-hidden="true"></span>
+    </label>
+  </div>
 
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 
+  {% macro listing_row(l, method, normalized=false) %}
+    <li class="result-row">
+      <span class="title">{{ l.title }}</span>
+      <span class="meta"><span class="result-score">Score {{ '%.3f'|format(l.normalized_score if normalized else l.score) }}</span> · <span class="score-method">{{ method }}</span> · {{ l.id }}
+        {% if normalized %} · Semantic similarity {{ '%.3f'|format(l.semantic_score) }}{% endif %}
+        {% if l.grade is not none %}<span class="grade g{{ l.grade }}">{{ grade_names[l.grade] }}</span>{% endif %}</span>
+    </li>
+  {% endmacro %}
+
   {% if results %}
-  <section>
-    <h2>Top {{ k }} listings</h2>
-    <p class="note">
-      {% if profile_id %}This query is profile <b>{{ profile_id }}</b> from {{ name }}, so each listing shows its relevance grade.
-      {% else %}Scores use a different scale for each method, so compare the order, not the numbers.{% endif %}
-    </p>
+  <section aria-label="Search results">
+    {% if view == 'one' %}
+    <h2>{{ combined_results|length }} unique {{ 'project' if combined_results|length == 1 else 'projects' }}</h2>
+    <p class="note">Projects must meet the fixed score and semantic similarity cutoffs. They are sorted by their highest rescaled score across the three methods. Similarity filters weak matches; it does not guarantee relevance.</p>
+    {% else %}
+    <h2>Top {{ k }} listings per method</h2>
+    <p class="note">Compare the order within each method. Scores use different scales.</p>
+    {% endif %}
+    {% if profile_id %}
+    <p class="note">Profile <b>{{ profile_id }}</b> · Labels show the dataset's reference grades{% if name == 'vt_furf' %} (AI draft, awaiting human review){% endif %}.</p>
+    {% endif %}
+    {% if view == 'one' %}
+    {% if combined_results %}
+    <ol class="combined-list">
+      {% for l in combined_results %}{{ listing_row(l, l.method, normalized=true) }}{% endfor %}
+    </ol>
+    {% else %}
+    <p class="empty-results" role="status">No projects meet the matching cutoffs. Try different interests.</p>
+    {% endif %}
+    {% else %}
     <div class="columns">
       {% for r in results %}
       <article class="method">
@@ -42,17 +72,12 @@
           {% if r.ndcg is not none %}<span class="metric">nDCG@{{ k }} {{ '%.3f'|format(r.ndcg) }}</span>{% endif %}
         </header>
         <ol>
-          {% for l in r.listings %}
-          <li>
-            <span class="title">{{ l.title }}</span>
-            <span class="meta">{{ l.id }} · score {{ '%.3f'|format(l.score) }}
-              {% if l.grade is not none %}<span class="grade g{{ l.grade }}">{{ grade_names[l.grade] }}</span>{% endif %}</span>
-          </li>
-          {% endfor %}
+          {% for l in r.listings %}{{ listing_row(l, r.method) }}{% endfor %}
         </ol>
       </article>
       {% endfor %}
     </div>
+    {% endif %}
   </section>
   {% endif %}
 
