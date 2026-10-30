@@ -53,7 +53,7 @@
     <p class="note">Compare the order within each method. Scores use different scales.</p>
     {% endif %}
     {% if profile_id %}
-    <p class="note">Profile <b>{{ profile_id }}</b> · Labels show the dataset's reference grades{% if name == 'vt_furf' %} (AI draft, awaiting human review){% endif %}.</p>
+    <p class="note">Profile <b>{{ profile_id }}</b> · Labels show the dataset's reference grades{% if name == 'vt_furf' %} (AI-drafted; one human review per pair, agreement not measured){% endif %}.</p>
     {% endif %}
     {% if view == 'one' %}
     {% if combined_results %}

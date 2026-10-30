@@ -1,6 +1,6 @@
 # Open Issues Log: Prototype v1
 
-Last updated: 2026-10-21 | Severity: H / M / L | Owner: [TBD]
+Last updated: 2026-10-30 | Severity: H / M / L | Owner: [TBD]
 
 ## Technical
 | # | Issue | Sev | Next step |
@@ -22,10 +22,10 @@ Last updated: 2026-10-21 | Severity: H / M / L | Owner: [TBD]
 | M2 | Structural degeneracy in `synthetic_v2`: P@k ~ 1/k, Recall is binary, nDCG reduces to rank-1 success. Only nDCG is informative. | M | Resolve via M1. |
 | M3 | Keyword leakage in the `semantic_analogy` stratum (a substring hit let BM25 win). A 5-document corpus cannot support claims about keyword vs semantic. | H | Larger corpus; remove leakage from profiles. |
 | M4 | Hybrid is min-max score blending with keyword priority (0.6/0.4). **Sweep run (2026-10-16)**: the default 0.6 is mistuned - nDCG@5 peaks at weight 0.4 (0.9030) vs 0.8846 for pure semantic and 0.8364 at 0.6. | M | Decide whether to change the default to ~0.3-0.4, and re-run the sweep on the expanded corpus before treating the argmax as real. See docs/RESULTS.md. |
-| M5 | Labels are single-rater and hand-written; no inter-rater agreement. | M | Second rater on a subset; compute agreement. |
+| M5 | Each VT pair has one human review, with different reviewers assigned to separate halves. No inter-rater agreement can be calculated from these disjoint reviews. | M | Obtain independent overlapping ratings before calculating agreement; owner TBD. |
 | M6 | ~~Corpus is synthetic, not real public VT listings, while the RQ concerns VT opportunities.~~ **Partly resolved (2026-10-22)**: `data/vt_furf/` holds 44 real listings from the 2026–27 First Year FURF projects list, verified word for word against the source. Its labels are the open part; see M8. | M | Review the labels (M8). |
-| M7 | Only 4 profiles in the hand-graded set; one rank change moves means noticeably. | M | More profiles; report per-profile results. `vt_furf` has 25 (23 scorable) once its labels are reviewed. |
-| M8 | `vt_furf` relevance grades were drafted by an AI assistant, not judged by people. An AI drafter may favour the semantic method, so its numbers (semantic 0.806 vs BM25 0.506 nDCG@5) are provisional. | H | Two team members review `relevance.csv` independently, compare, and resolve disagreements (also closes M5). Then pin the reviewed numbers in the tests. |
+| M7 | Only 4 profiles in the hand-graded set; one rank change moves means noticeably. | M | More profiles; report per-profile results. `vt_furf` has 25 (24 scorable after the October 30 reviews). |
+| M8 | **Human coverage completed 2026-10-30:** Vaidehi reviewed rows 1–550; Sandilya reviewed rows 551–1100. Their 11 and 52 changes are integrated, with all 1,100 pairs valid and results rerun. Independent overlapping ratings are not available. | H | Keep agreement work open under M5. Review details and remaining ranking cases: docs/HUMAN_REVIEW.md. |
 
 ## Human-subjects dependencies
 | # | Issue | Sev | Next step |

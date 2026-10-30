@@ -71,7 +71,7 @@ To check that everything works, run this in an activated terminal:
 python -m pytest
 ```
 
-Expected output: `39 passed`. The tests include every published number, so a pass also means
+Expected output: `40 passed`. The tests include every published number, so a pass also means
 the results reproduce.
 
 **Testing team:** the scenarios to run are in [TEST_SCENARIOS.md](TEST_SCENARIOS.md).
@@ -146,7 +146,7 @@ How the way people talk changes from one part of the state to another
 I'm a first-year aerospace engineering student. I've been building and launching model rockets since middle school and I took AP Physics last year. I'd love to work on real hardware that goes to space, or at least on the design process behind it. I can do some basic programming and I want to get better at it.
 ```
 
-**S24 — Theatre Arts** (nothing in the dataset fits)
+**S24 — Theatre Arts** (reviewed as a partial match to one listing)
 
 ```text
 I want to study classical ballet choreography
@@ -160,12 +160,11 @@ I want to study classical ballet choreography
 | S08 — Calm pets | Semantic ranks **Nailed it: Exploring Effective Training for Nail Trims Using Scratch Boards** first (strong). Keyword ranks **Engineering workforce development in the era of emerging technologies** first and Hybrid ranks **Optimistic chickens** first, both unsuitable. No word in the request appears in the posting, so keyword search has nothing to match, and the hybrid inherits much of that failure. |
 | S12 — Dialects | Semantic ranks the **Southwest Virginia Language (SWVAL) Project** first (strong). Keyword and Hybrid rank a cognitive-psychology study first (unsuitable). |
 | S22 — Space hardware | The reverse: Keyword and Hybrid rank **VT Cube Satellite: Hack-a-Sat** first (strong), on the words "design", "hardware" and "space". Semantic ranks the engineering-workforce project first (unsuitable). Semantic is not always better. |
-| S24 — Ballet | Every method still returns five listings, all graded unsuitable. The app has no "no good match" answer. |
+| S24 — Ballet | Human review changed FURF-15 to a partial match. S24 is now included in the means. Its original `nomatch` profile-type tag is retained as provenance, not a statement that all current grades are zero. |
 
-Pasting a sample exactly shows its relevance grades; comparison mode also shows per-query nDCG. For `vt_furf` those
-grades are a **first draft written by an AI assistant**, not yet reviewed by people, so treat
-them as provisional (see the [FURF data provenance](#furf-data-provenance) section below). The `prototype`
-grades were written by a person.
+Pasting a sample exactly shows its reference grades; comparison mode also shows per-query nDCG.
+For `vt_furf`, the AI-drafted grades now have one human review per pair. Independent rater
+agreement remains unmeasured. The `prototype` grades were written by a person.
 
 Also try your own queries:
 
@@ -217,7 +216,7 @@ Options:
 | `heldout` | 30 × 24 | Profiles tagged `exact`, `paraphrase`, `vague`, `token`, `long` or `nomatch`. Grades fixed before any method was run on it |
 | `main_demo` | 12 × 5 | Small demo set |
 | `synthetic_v2` | 5 × 20 | Longer profiles. Grades derived from each profile's target listing (one relevant listing each), so read with caution |
-| `vt_furf` (default) | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. Grades are an AI-drafted first pass awaiting human review, so results are provisional. See the [FURF data provenance](#furf-data-provenance) section below |
+| `vt_furf` (default) | 44 × 25 | **Real VT listings** from the 2026–27 First Year FURF projects list, copied word for word, with synthetic profiles. AI-drafted grades have one human review per pair across two disjoint halves; agreement has not been measured. See the [FURF data provenance](#furf-data-provenance) section below |
 
 To use a dataset other than the default in the web interface, add it to the URL, for example
 http://localhost:8000/?dataset=vt_furf. Searches keep it.
@@ -249,8 +248,8 @@ student profiles. No real student data is included.
   are normalized from its experience and skills section; eligibility and college are metadata.
   The source's research goals and mentoring style are not included in the searchable text.
 - `profiles.csv`: 25 synthetic first-year student profiles.
-- `relevance.csv`: 1,100 AI-drafted grades, one per profile/listing pair. The grades are a first
-  draft and need human review; treat evaluation results for this dataset as provisional.
+- `relevance.csv`: 1,100 AI-drafted grades reviewed in two halves by Vaidehi and Sandilya.
+  There is one human review per pair, not two independent ratings. See [review provenance](docs/HUMAN_REVIEW.md).
 
 **Listing IDs:** `FURF-##` is the project's ID from the original source list—for example,
 `FURF-07`. It identifies the posting; it is not a rank or match score. The source list has no
@@ -285,9 +284,16 @@ On `prototype` with k = 5:
 The keyword-weight sweep peaks at 0.4 (nDCG 0.9030), so the 0.6 default gives keywords too much
 weight.
 
-These are the published results because `prototype`'s grades were written by a person. The page
-opens on `vt_furf`, whose real listings show the same pattern more sharply (semantic 0.8060 vs
-keyword 0.5059 nDCG@5), but whose grades are still an unreviewed AI draft. Its numbers are provisional and are not pinned in the tests yet.
+The reviewed `vt_furf` results use 24 scorable profiles (only S25 is excluded):
+
+| Method | nDCG@5 | Precision@5 | Recall@5 |
+|---|---|---|---|
+| Keyword | 0.4852 | 0.3083 | 0.4608 |
+| Semantic | **0.8079** | **0.4417** | **0.7192** |
+| Hybrid (0.6/0.4) | 0.6228 | 0.3917 | 0.6326 |
+
+These values are pinned in tests and saved in `results/vt_furf/`. Reviews cover separate
+halves of the labels; they do not establish inter-rater agreement. See [review report](docs/HUMAN_REVIEW.md).
 
 Results are deterministic, for four reasons:
 - The model is pinned to a fixed revision and cached locally after download.
@@ -320,9 +326,9 @@ committed in [results/](results/).
 
 ## Known limitations
 
-- **Mostly small, synthetic data:** four datasets have 5–30 listings written to resemble VT postings. `vt_furf` has 44 real listings, but its grades are an unreviewed AI draft.
+- **Mostly small, synthetic data:** four datasets have 5–30 listings written to resemble VT postings. `vt_furf` has 44 real listings, with one human review per AI-drafted grade and no measured rater agreement.
 - **k = 5, not 10:** with 8 listings, a top 10 would be the whole corpus.
-- **One rater:** one person wrote the grades, and there is no agreement check yet.
+- **One human review per pair:** two people reviewed separate halves of `vt_furf`; no independent overlapping ratings or agreement measure are available.
 - **No "no match" answer:** each method always returns k listings. When a query shares no words with any listing, BM25 returns them in id order.
 
 The full list is in [OPEN_ISSUES.md](OPEN_ISSUES.md). The presenter runbook is

@@ -247,8 +247,8 @@ come from it.
 python -m pytest -v
 ```
 
-**Expected:** `43 passed, 4 subtests passed`. The tests cover:
-- the published results on all four datasets, and the weight sweep
+**Expected:** `40 passed`. The tests cover:
+- the published results on all five datasets, and the weight sweep
 - the nDCG calculation, worked by hand
 - ties and the no-overlap case
 - rejection of five kinds of bad CSV, and that every dataset folder in `data/` loads
@@ -256,7 +256,7 @@ python -m pytest -v
 - the web interface, including a broken dataset folder
 - the Week 5 standalone benchmark in `benchmark.py` (9 tests; see `WEEK5.md`)
 
-**Pass if** all 43 tests pass. If any fail, please copy the failure summary into your report.
+**Pass if** all 40 tests pass. If any fail, please copy the failure summary into your report.
 
 ---
 
@@ -278,48 +278,33 @@ ranking or match score.
 4. Search for your own interests, and judge whether the results make sense.
 5. *Second terminal:* `python evaluate.py` with no dataset name.
 
-**Expected**
-- At step 1, 44 listings and 25 profiles, with means over the 23 that have a relevant listing:
+**Expected and recorded results (October 30 review integration)**
 
-  | Method | nDCG@5 | Precision@5 | Recall@5 |
-  |---|---|---|---|
-  | Keyword (BM25) | 0.5059 | 0.3217 | 0.4844 |
-  | **Semantic (all-MiniLM-L6-v2)** | **0.8060** | **0.4870** | **0.7288** |
-  | Hybrid (0.6 KW / 0.4 SEM) | 0.6507 | 0.4087 | 0.6472 |
+44 listings, 25 profiles, means over 24 profiles. Only S25 has no relevant listing.
 
-  and by profile type:
+| Method | nDCG@5 | Precision@5 | Recall@5 |
+|---|---|---|---|
+| Keyword | 0.4852 | 0.3083 | 0.4608 |
+| Semantic | 0.8079 | 0.4417 | 0.7192 |
+| Hybrid | 0.6228 | 0.3917 | 0.6326 |
 
-  | Type | Keyword | Semantic | Hybrid |
-  |---|---|---|---|
-  | exact | 0.9206 | 0.9076 | 0.9342 |
-  | long | 0.6242 | 0.3915 | 0.7048 |
-  | paraphrase | 0.1493 | 0.9383 | 0.4865 |
-  | token | 0.8634 | 0.8789 | 0.9010 |
-  | vague | 0.3486 | 0.6640 | 0.4573 |
+| Profile | Method | nDCG@5 | First listing |
+|---|---|---|---|
+| S08 | Keyword | 0.0000 | FURF-16 (unsuitable) |
+| S08 | Semantic | 1.0000 | FURF-38 (strong) |
+| S08 | Hybrid | 0.0000 | FURF-32 (unsuitable) |
+| S22 | Keyword | 0.7337 | FURF-08 (strong) |
+| S22 | Semantic | 0.3825 | FURF-16 (unsuitable) |
+| S22 | Hybrid | 0.7337 | FURF-08 (strong) |
 
-- At steps 2 and 3:
+Recorded outputs: [rankings](results/vt_furf/match_results.csv),
+[per-profile metrics](results/vt_furf/evaluation_per_profile.csv), and
+[summary](results/vt_furf/evaluation_summary.csv).
 
-  | Profile | Method | nDCG@5 | Top listing (grade) |
-  |---|---|---|---|
-  | S08 | Keyword | 0.138 | Engineering workforce development in the era of emerging technologies (unsuitable) |
-  | S08 | Semantic | 1.000 | Nailed it: Exploring Effective Training for Nail Trims Using Scratch Boards (strong) |
-  | S08 | Hybrid | 0.174 | Optimistic chickens: Does cooperative cognitive bias testing improve learning success? (unsuitable) |
-  | S22 | Keyword | 1.000 | VT Cube Satellite: Hack-a-Sat (strong) |
-  | S22 | Semantic | 0.521 | Engineering workforce development in the era of emerging technologies (unsuitable) |
-  | S22 | Hybrid | 1.000 | VT Cube Satellite: Hack-a-Sat (strong) |
-
-- Step 5 prints the step-1 tables and writes three CSVs to `outputs/vt_furf/`.
-
-**Pass if** the numbers match, both profiles show grade badges, and the CLI defaults to
-`vt_furf`.
-
-**Worth noting.** The listings are real, but the grades behind the badges and the scores are a
-**first draft written by an AI assistant** and have not yet been reviewed by people. If a grade
-looks wrong to you, for example a listing marked "unsuitable" that you think fits, please note
-the profile and listing in your report: that feeds directly into the review. The two profiles
-also show that neither method always wins. Semantic finds the nail-trim study when no word is
-shared (S08), while keyword search wins the long aerospace paragraph on "design", "hardware"
-and "space" (S22).
+**Pass if** rerunning reproduces the recorded values. This checks reproducibility, not label correctness.
+AI-drafted labels have one human review per pair across separate halves; inter-rater agreement
+remains unmeasured. S24 now has a partial match to FURF-15 and must not be described as a
+confirmed no-match query. See [review provenance and limitations](docs/HUMAN_REVIEW.md).
 
 ---
 

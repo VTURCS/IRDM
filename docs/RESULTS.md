@@ -1,3 +1,5 @@
+> Updated VT results after the October 30 human reviews are in [HUMAN_REVIEW.md](HUMAN_REVIEW.md) and `results/vt_furf/`. The prototype results below are unchanged.
+
 # Initial Results: Prototype v1 (DRAFT)
 
 Dataset: `prototype` | 8 synthetic listings | 4 hand-graded profiles | **k = 5** (not 10)

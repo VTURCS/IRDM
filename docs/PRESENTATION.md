@@ -10,7 +10,7 @@ stand up.
 
 Follow the [README quick start](../README.md#quick-start) to install dependencies and start
 the app. In a second terminal, activate the same environment and run `python -m pytest`
-(expect `43 passed, 4 subtests passed`). Use that activated terminal for the optional CLI command below.
+(expect `40 passed`). Use that activated terminal for the optional CLI command below.
 
 A pass means every number below reproduces on the machine you're presenting from. If anything
 fails, **don't present the numbers**; show `docs/RESULTS.md` and `results/` instead.
@@ -30,7 +30,7 @@ Have the four URLs below open in tabs before you start, so you are never typing 
 | (c) | `localhost:8000/?dataset=prototype&weight=0.4` — expand **Evaluation** | The hybrid rises to 0.903, above pure semantic. A *light* keyword weight helps; the default is just mistuned. |
 | (d) | `localhost:8000/?dataset=heldout` — expand **Evaluation** for the by-type table | BM25 holds up on `exact` (0.95), but collapses on `paraphrase` (0.47) and `vague` (0.20). |
 | (e) | *Optional:* `python evaluate.py prototype --sweep` | The full weight curve in the terminal, plus the CSVs in `outputs/`. |
-| (f) | *Optional:* `localhost:8000` (real VT listings) — paste `Helping pets stay calm when their paws are handled` | On 44 real FURF postings, BM25's top pick is an engineering-workforce project; semantic finds the dog nail-trim study. **Say that these grades are an unreviewed AI draft** before quoting any number. |
+| (f) | *Optional:* `localhost:8000` (real VT listings) — paste `Helping pets stay calm when their paws are handled` | On 44 real FURF postings, BM25's top pick is an engineering-workforce project; semantic finds the dog nail-trim study. **Say that AI-drafted grades have one human review per pair, with no measured inter-rater agreement** before quoting any number. |
 
 The search box is the only control on the page. Dataset, k and keyword weight are set
 through the URL, and a search keeps whichever ones are already in it. The plain address opens

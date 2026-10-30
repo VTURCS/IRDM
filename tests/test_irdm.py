@@ -23,6 +23,7 @@ KW, SEM, HYB = irdm.KEYWORD, irdm.SEMANTIC, "Hybrid (0.6 KW / 0.4 SEM)"
 
 # Mean (nDCG@5, Precision@5, Recall@5) per method.
 PUBLISHED = {
+    "vt_furf": {KW: (0.4852, 0.3083, 0.4608), SEM: (0.8079, 0.4417, 0.7192), HYB: (0.6228, 0.3917, 0.6326)},
     "prototype": {KW: (0.7046, 0.55, 0.7417), SEM: (0.8846, 0.65, 0.8875), HYB: (0.8364, 0.65, 0.8875)},
     "synthetic_v2": {KW: (0.9667, 0.20, 1.0), SEM: (0.9421, 0.20, 1.0), HYB: (0.9754, 0.20, 1.0)},
     "heldout": {KW: (0.5820, 0.2364, 0.5455), SEM: (0.8649, 0.3909, 0.8583), HYB: (0.8320, 0.3818, 0.8356)},

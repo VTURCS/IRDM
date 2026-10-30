@@ -1,0 +1,4 @@
+method,mean_ndcg@k,mean_precision@k,mean_recall@k,n_profiles
+Keyword (BM25),0.4852,0.3083,0.4608,24
+Semantic (all-MiniLM-L6-v2),0.8079,0.4417,0.7192,24
+Hybrid (0.6 KW / 0.4 SEM),0.6228,0.3917,0.6326,24
