@@ -334,3 +334,24 @@ committed in [results/](results/).
 The full list is in [OPEN_ISSUES.md](OPEN_ISSUES.md). The presenter runbook is
 [docs/PRESENTATION.md](docs/PRESENTATION.md), and the method design is in
 [docs/hybrid_design.md](docs/hybrid_design.md).
+
+
+---
+
+## Week 9 Update: Defensible Findings & Held-Out Validation
+
+**Pinned Commit Hash:** `0224cfaf240555965dcf82a4c1218183cd43f876` (`0224cfa`)  
+**Environment:** Python 3.10–3.13 (Verified on Python 3.13; 40/40 automated unit tests passing)
+
+### 1. Held-Out Evaluation & Reproduction Commands
+To verify that our `vt_furf` findings generalize without overfitting, we evaluate all three retrieval methods (`bm25`, `semantic`, `hybrid`) and our 7-weight parameter sweep against `data/heldout/`:
+
+```bash
+# Run main audited VT FURF benchmark (44 opportunities, 25 profiles, k=5)
+python evaluate.py --dataset vt_furf --k 5
+
+# Run held-out validation benchmark
+python evaluate.py --dataset heldout --k 5
+
+# Run full unit test suite (40 tests)
+pytest
